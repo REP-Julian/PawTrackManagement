@@ -8,6 +8,7 @@ import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.geom.RoundRectangle2D;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 
 /**
@@ -29,8 +30,9 @@ public class PetAdoptionForm extends JFrame {
     private ButtonGroup otherPetsGroup;
     private JCheckBox termsCheckbox;
     private JTextArea termsTextArea;
-    private JToggleButton gcashButton, mayaButton;
-    private ButtonGroup paymentGroup;
+    private JRadioButton tipNoneRadio, tip50Radio, tip100Radio, tipCustomRadio;
+    private ButtonGroup tipGroup;
+    private JTextField customTipField;
     private JButton submitButton;
     private JFrame parentDashboard;
     private final List<Component> errorFields = new ArrayList<>();
@@ -71,22 +73,22 @@ public class PetAdoptionForm extends JFrame {
         formContainer.setBorder(new EmptyBorder(20, 40, 20, 40));
 
         // Section 1: Personal Information
-        formContainer.add(createSectionCard("👤 Personal Information", createPersonalInfoPanel()));
+        formContainer.add(createSectionCard(" Personal Information", createPersonalInfoPanel()));
         formContainer.add(Box.createVerticalStrut(15));
 
         // Section 2: Contact & Location
-        formContainer.add(createSectionCard("📍 Contact & Location", createContactPanel()));
+        formContainer.add(createSectionCard(" Contact & Location", createContactPanel()));
         formContainer.add(Box.createVerticalStrut(15));
 
         // Section 3: Living Situation
-        formContainer.add(createSectionCard("🏠 Living Situation", createLivingPanel()));
+        formContainer.add(createSectionCard(" Living Situation", createLivingPanel()));
         formContainer.add(Box.createVerticalStrut(15));
 
         // Section 4: Terms & Payment
         JPanel termsPaymentPanel = new JPanel(new GridLayout(1, 2, 15, 0));
         termsPaymentPanel.setBackground(backgroundColor);
-        termsPaymentPanel.add(createSectionCard("📋 Terms & Conditions", createTermsPanel()));
-        termsPaymentPanel.add(createSectionCard("💳 Payment Method", createPaymentPanel()));
+        termsPaymentPanel.add(createSectionCard(" Terms & Conditions", createTermsPanel()));
+        termsPaymentPanel.add(createSectionCard(" Tip", createPaymentPanel()));
         formContainer.add(termsPaymentPanel);
         formContainer.add(Box.createVerticalStrut(20));
 
@@ -214,9 +216,8 @@ public class PetAdoptionForm extends JFrame {
         genderGroup = new ButtonGroup();
         maleRadio = createChipRadio("Male");
         femaleRadio = createChipRadio("Female");
-        nonBinaryRadio = createChipRadio("Non-Binary");
         preferNotToSayRadio = createChipRadio("Prefer Not to Say");
-        panel.add(createChipRadioPanel("Gender", genderGroup, maleRadio, femaleRadio, nonBinaryRadio, preferNotToSayRadio), setGbc(gbc, 2, 1));
+        panel.add(createChipRadioPanel("Gender", genderGroup, maleRadio, femaleRadio, preferNotToSayRadio), setGbc(gbc, 2, 1));
 
         return panel;
     }
@@ -310,18 +311,52 @@ public class PetAdoptionForm extends JFrame {
      * Creates payment panel
      */
     private JPanel createPaymentPanel() {
-        JPanel panel = new JPanel(new GridLayout(2, 1, 0, 12));
+        JPanel panel = new JPanel();
         panel.setBackground(surfaceColor);
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(new EmptyBorder(8,8,8,8));
 
-        paymentGroup = new ButtonGroup();
-        gcashButton = createPaymentCard("GCash", "💙 Digital Wallet", new Color(0, 112, 255));
-        mayaButton = createPaymentCard("Maya", "💚 Digital Wallet", new Color(16, 185, 129));
+        tipGroup = new ButtonGroup();
+        tipNoneRadio = new JRadioButton("NONE");
+        tip50Radio = new JRadioButton("50");
+        tip100Radio = new JRadioButton("100");
+        tipCustomRadio = new JRadioButton("Custom");
 
-        paymentGroup.add(gcashButton);
-        paymentGroup.add(mayaButton);
+        // style radios minimally to match form look
+        JRadioButton[] tips = new JRadioButton[]{tipNoneRadio, tip50Radio, tip100Radio, tipCustomRadio};
+        for (JRadioButton r : tips) {
+            r.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+            r.setBackground(surfaceColor);
+            r.setForeground(textPrimary);
+            r.setFocusPainted(false);
+            r.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            tipGroup.add(r);
+            panel.add(r);
+            panel.add(Box.createVerticalStrut(6));
+        }
 
-        panel.add(gcashButton);
-        panel.add(mayaButton);
+        // custom amount field (disabled until Custom is selected)
+        customTipField = new JTextField();
+        customTipField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        customTipField.setEnabled(false);
+        customTipField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+        customTipField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(borderColor, 1, true),
+            new EmptyBorder(6, 8, 6, 8)
+        ));
+        panel.add(new JLabel("Custom amount:"));
+        panel.add(Box.createVerticalStrut(4));
+        panel.add(customTipField);
+
+        // enable/disable custom field based on selection
+        tipCustomRadio.addItemListener(e -> {
+            boolean sel = tipCustomRadio.isSelected();
+            customTipField.setEnabled(sel);
+            if (!sel) customTipField.setText("");
+        });
+
+        // default select NONE
+        tipNoneRadio.setSelected(true);
 
         return panel;
     }
@@ -358,6 +393,17 @@ public class PetAdoptionForm extends JFrame {
         field.addFocusListener(new FocusAdapter() {
             @Override
             public void focusGained(FocusEvent e) {
+                // If this field was previously marked as error, clear the error state on focus
+                if (errorFields.contains(field)) {
+                    errorFields.remove(field);
+                    field.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(primaryColor, 2, true),
+                        new EmptyBorder(9, 11, 9, 11)
+                    ));
+                    // continue so selected styling is visible
+                    return;
+                }
+
                 if (!errorFields.contains(field)) {
                     field.setBorder(BorderFactory.createCompoundBorder(
                         BorderFactory.createLineBorder(primaryColor, 2, true),
@@ -594,15 +640,28 @@ public class PetAdoptionForm extends JFrame {
      * Handles form submission
      */
     private void handleSubmit() {
-        // Validate and collect form data
+        // Validate required fields before submitting
+        if (!validateForm()) {
+            return; // abort submit if invalid
+        }
+
         // Submit logic here
-        JOptionPane.showMessageDialog(this, "Redirecting to payment. Please wait...","Success", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(this, "Application submitted successfully.","Success", JOptionPane.INFORMATION_MESSAGE);
         
-        // Close current form and open PaymentFrame
+        // Close current form and return to dashboard
         this.dispose();
         SwingUtilities.invokeLater(() -> {
-            PaymentFrame paymentFrame = new PaymentFrame();
-            paymentFrame.setVisible(true);
+            if (parentDashboard != null) {
+                parentDashboard.setVisible(true);
+                parentDashboard.toFront();
+                parentDashboard.requestFocus();
+            } else {
+                try {
+                    new Dashboard().setVisible(true);
+                } catch (Exception e) {
+                    System.err.println("Error opening Dashboard: " + e.getMessage());
+                }
+            }
         });
     }
 
@@ -625,6 +684,108 @@ public class PetAdoptionForm extends JFrame {
                 }
             }
         });
+    }
+
+    /**
+     * Validate required fields and show errors. Returns true if valid.
+     */
+    private boolean validateForm() {
+        // Reset previous error styling
+         for (Component c : new ArrayList<>(errorFields)) {
+             if (c instanceof JTextField) {
+                 ((JTextField) c).setBorder(BorderFactory.createCompoundBorder(
+                     BorderFactory.createLineBorder(borderColor, 1, true),
+                     new EmptyBorder(10, 12, 10, 12)
+                 ));
+             } else if (c instanceof AbstractButton) {
+                 ((AbstractButton) c).setBorder(new EmptyBorder(6, 12, 6, 12));
+             }
+         }
+         errorFields.clear();
+ 
+         StringBuilder msg = new StringBuilder();
+ 
+         // Check text fields
+         if (lastNameField.getText().trim().isEmpty()) { markError(lastNameField); msg.append("- Last Name is required\n"); }
+         if (firstNameField.getText().trim().isEmpty()) { markError(firstNameField); msg.append("- First Name is required\n"); }
+         if (dobField.getText().trim().isEmpty()) { markError(dobField); msg.append("- Date of Birth is required\n"); }
+         if (ageField.getText().trim().isEmpty()) { markError(ageField); msg.append("- Age is required\n"); }
+         if (contactField.getText().trim().isEmpty()) { markError(contactField); msg.append("- Contact Number is required\n"); }
+         if (emailField.getText().trim().isEmpty()) { markError(emailField); msg.append("- Email Address is required\n"); }
+         if (provinceField.getText().trim().isEmpty()) { markError(provinceField); msg.append("- Province is required\n"); }
+         if (cityField.getText().trim().isEmpty()) { markError(cityField); msg.append("- City is required\n"); }
+         if (barangayField.getText().trim().isEmpty()) { markError(barangayField); msg.append("- Barangay is required\n"); }
+         if (addressField.getText().trim().isEmpty()) { markError(addressField); msg.append("- Street Address is required\n"); }
+ 
+         // Check button groups
+         if (residencyGroup == null || !isGroupSelected(residencyGroup)) {
+             msg.append("- Residency Type is required\n");
+             // mark first radio in group if available
+             if (resSingleRadio != null) { markError(resSingleRadio); }
+         }
+         if (otherPetsGroup == null || !isGroupSelected(otherPetsGroup)) {
+             msg.append("- Please indicate if you have other pets\n");
+             if (petsYesRadio != null) { markError(petsYesRadio); }
+         }
+ 
+         // Terms checkbox
+         if (termsCheckbox == null || !termsCheckbox.isSelected()) {
+             msg.append("- You must agree to the terms and conditions\n");
+             if (termsCheckbox != null) { markError(termsCheckbox); }
+         }
+
+        // Tip / payment validation: if custom selected ensure a positive number
+        if (tipCustomRadio != null && tipCustomRadio.isSelected()) {
+            String v = customTipField.getText().trim();
+            if (v.isEmpty()) {
+                markError(customTipField);
+                msg.append("- Custom tip amount is required\n");
+            } else {
+                try {
+                    double val = Double.parseDouble(v);
+                    if (val <= 0) {
+                        markError(customTipField);
+                        msg.append("- Custom tip must be greater than 0\n");
+                    }
+                } catch (NumberFormatException ex) {
+                    markError(customTipField);
+                    msg.append("- Custom tip must be a number\n");
+                }
+            }
+        }
+ 
+         if (msg.length() > 0) {
+             JOptionPane.showMessageDialog(this, "Please complete the following fields:\n\n" + msg.toString(), "Incomplete Form", JOptionPane.ERROR_MESSAGE);
+             return false;
+         }
+ 
+         return true;
+     }
+
+    private void markError(Component c) {
+        if (c == null) return;
+        errorFields.add(c);
+        if (c instanceof JTextField) {
+            ((JTextField) c).setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(dangerColor, 2, true),
+                new EmptyBorder(9, 11, 9, 11)
+            ));
+        } else if (c instanceof AbstractButton) {
+            ((AbstractButton) c).setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(dangerColor, 2, true),
+                new EmptyBorder(4, 8, 4, 8)
+            ));
+        } else if (c instanceof JCheckBox) {
+            ((JCheckBox) c).setForeground(dangerColor.darker());
+        }
+    }
+
+    private boolean isGroupSelected(ButtonGroup group) {
+        if (group == null) return false;
+        for (Enumeration<AbstractButton> e = group.getElements(); e.hasMoreElements();) {
+            if (e.nextElement().isSelected()) return true;
+        }
+        return false;
     }
 
     public static void main(String[] args) {

@@ -1,815 +1,600 @@
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.io.File; // Added for file chooser
-import javax.swing.filechooser.FileNameExtensionFilter; // Added for image file filter
-import java.awt.geom.RoundRectangle2D; // Added for rounded corners
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.geom.RoundRectangle2D;
+import java.awt.geom.Ellipse2D;
 
+/**
+ * UserProfile.java
+ * * A complete Java Swing application displaying a User Profile including:
+ * - Modern Aesthetic UI with Gradients and Rounded Corners
+ * - Custom drawn Profile Picture
+ * - Personal Information (Name, Age, Address, Contact)
+ * - Editable Profile Information via Dialog
+ * - Card-style layouts for About and Tables
+ * - Status Color Logic
+ * * To run: Compile `javac UserProfile.java` and run `java UserProfile`
+ */
+public class UserProfile extends JFrame {
 
-public class UserProfile extends JFrame implements ActionListener {
+    // Modern Color Palette
+    private static final Color ACCENT_COLOR = new Color(52, 152, 219); // Bright Blue
+    private static final Color ACCENT_DARK = new Color(41, 128, 185);
+    private static final Color SIDEBAR_BG = Color.WHITE;
+    private static final Color MAIN_BG = new Color(244, 247, 246); // Very light gray/blue
+    private static final Color TEXT_PRIMARY = new Color(44, 62, 80); // Dark Slate
+    private static final Color TEXT_SECONDARY = new Color(127, 140, 141); // Gray
+    private static final Color CARD_BG = Color.WHITE;
 
-    // --- Profile Data ---
-    private String userName = "Julian Agustino";
-    private String userEmail = "Julian123@gmail.com";
-    private String userContact = "09876543211";
-    private String userAddress = "178 marikina binabaha na port 123 quezon city";
-    
-    // Add shared image storage
-    private static Image sharedProfileImage = null;
-
-    // --- UI Components to be updated ---
+    // Editable Labels & Fields
     private JLabel nameLabel;
-    private JLabel infoLabel;
-    private ImagePlaceholder largeImage;
-    private JPanel bottomContentPanel;
-    private CardLayout bottomCardLayout;
-    private JButton regPetButton; // Add reference to buttons
-    private JButton aboutButton;
+    private JLabel ageValLabel;
+    private JLabel addressValLabel;
+    private JLabel emailValLabel;
+    private JLabel contactValLabel;
+    private JTextArea aboutText; 
+
+    // Expose the built UI so dashboard can embed it
+    private JPanel mainContentPanel;
+
+    public UserProfile() {
+        setTitle("User Profile - Pet Management System");
+        setSize(1000, 750);
+        // Use DISPOSE_ON_CLOSE so embedding doesn't terminate the whole app when closed
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setLocationRelativeTo(null); // Center on screen
+        setLayout(new BorderLayout());
+
+        // --- Main Content Panel (promoted from local variable to field) ---
+        mainContentPanel = new JPanel(new BorderLayout());
+        mainContentPanel.setBackground(MAIN_BG);
+
+        // --- Left Sidebar (Profile Image & Contact) ---
+        JPanel sidebarPanel = createSidebar();
+        mainContentPanel.add(sidebarPanel, BorderLayout.WEST);
+
+        // --- Center Panel (Tabs/Lists) ---
+        JTabbedPane contentTabs = createContentTabs();
+        
+        // Add padding around the tabbed pane to let the background show
+        JPanel contentWrapper = new JPanel(new BorderLayout());
+        contentWrapper.setBackground(MAIN_BG);
+        contentWrapper.setBorder(new EmptyBorder(20, 20, 20, 20));
+        contentWrapper.add(contentTabs, BorderLayout.CENTER);
+        
+        mainContentPanel.add(contentWrapper, BorderLayout.CENTER);
+
+        add(mainContentPanel);
+    }
+
+    // Public getter so Dashboard can embed the profile UI
+    public JPanel getMainContentPanel() {
+        return mainContentPanel;
+    }
+
+    private JPanel createSidebar() {
+        JPanel sidebar = new JPanel();
+        sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
+        sidebar.setPreferredSize(new Dimension(320, 0));
+        sidebar.setBackground(SIDEBAR_BG);
+        // Subtle shadow border on the right
+        sidebar.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(220, 220, 220)));
+
+        // 1. Gradient Profile Header
+        GradientPanel profileHeader = new GradientPanel(ACCENT_COLOR, new Color(142, 68, 173)); // Blue to Purple gradient
+        profileHeader.setLayout(new BoxLayout(profileHeader, BoxLayout.Y_AXIS));
+        profileHeader.setBorder(new EmptyBorder(40, 20, 40, 20));
+        profileHeader.setMaximumSize(new Dimension(320, 280));
+
+        // Custom Component for Circular Image
+        ProfileImagePanel imgPanel = new ProfileImagePanel();
+        imgPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        nameLabel = new JLabel("Alex Johnson");
+        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        nameLabel.setForeground(Color.WHITE);
+        nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        nameLabel.setBorder(new EmptyBorder(15, 0, 5, 0));
+
+        profileHeader.add(imgPanel);
+        profileHeader.add(nameLabel);
+
+        // 2. Personal Details
+        JPanel detailsPanel = new JPanel(new GridBagLayout());
+        detailsPanel.setBackground(SIDEBAR_BG);
+        detailsPanel.setBorder(new EmptyBorder(30, 25, 20, 25));
+        
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(8, 0, 8, 0);
+        gbc.weightx = 1.0;
+        gbc.gridx = 0;
+
+        // Initialize value labels
+        ageValLabel = new JLabel("28");
+        addressValLabel = new JLabel("123 Maple Street, Springfield");
+        emailValLabel = new JLabel("alex.j@example.com");
+        contactValLabel = new JLabel("+1 (555) 019-2834");
+
+        // Add rows
+        addDetailRow(detailsPanel, gbc, "AGE", ageValLabel);
+        addDetailRow(detailsPanel, gbc, "ADDRESS", addressValLabel);
+        addDetailRow(detailsPanel, gbc, "EMAIL", emailValLabel);
+        addDetailRow(detailsPanel, gbc, "CONTACT", contactValLabel);
+
+        // 3. Edit Button Area
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setBackground(SIDEBAR_BG);
+        buttonPanel.setBorder(new EmptyBorder(10, 25, 30, 25));
+        
+        ModernButton editButton = new ModernButton("Edit Profile");
+        editButton.addActionListener(e -> openEditProfileDialog());
+        editButton.setPreferredSize(new Dimension(270, 45));
+        
+        buttonPanel.add(editButton);
+
+        // Add sections to sidebar
+        sidebar.add(profileHeader);
+        sidebar.add(detailsPanel);
+        sidebar.add(Box.createVerticalGlue()); 
+        sidebar.add(buttonPanel);
+
+        return sidebar;
+    }
+
+    private void addDetailRow(JPanel panel, GridBagConstraints gbc, String label, JLabel valueLabel) {
+        gbc.gridy++;
+        JLabel lbl = new JLabel(label);
+        lbl.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        lbl.setForeground(new Color(149, 165, 166)); // Muted Label Color
+        panel.add(lbl, gbc);
+
+        gbc.gridy++;
+        valueLabel.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        valueLabel.setForeground(TEXT_PRIMARY);
+        panel.add(valueLabel, gbc);
+        
+        // Add a separator line
+        gbc.gridy++;
+        JSeparator sep = new JSeparator();
+        sep.setForeground(new Color(240, 240, 240));
+        panel.add(sep, gbc);
+    }
+
+    private void openEditProfileDialog() {
+        JDialog dialog = new JDialog(this, "Edit Profile", true);
+        dialog.setSize(480, 650);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout());
+        dialog.getContentPane().setBackground(MAIN_BG);
+
+        // Container
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        contentPanel.setBorder(new EmptyBorder(25, 25, 25, 25));
+        contentPanel.setBackground(MAIN_BG);
+
+        // Form Grid - reduced rows since Role removed
+        JPanel formPanel = new JPanel(new GridLayout(5, 2, 15, 20));
+        formPanel.setBackground(MAIN_BG);
+        formPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JTextField nameField = createStyledTextField(nameLabel.getText());
+        JTextField ageField = createStyledTextField(ageValLabel.getText());
+        JTextField addressField = createStyledTextField(addressValLabel.getText());
+        JTextField emailField = createStyledTextField(emailValLabel.getText());
+        JTextField contactField = createStyledTextField(contactValLabel.getText());
+
+        addFormRow(formPanel, "Name", nameField);
+        addFormRow(formPanel, "Age", ageField);
+        addFormRow(formPanel, "Address", addressField);
+        addFormRow(formPanel, "Email", emailField);
+        addFormRow(formPanel, "Contact", contactField);
+
+        // Bio Field
+        JPanel bioPanel = new JPanel(new BorderLayout());
+        bioPanel.setBackground(MAIN_BG);
+        bioPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        bioPanel.setBorder(new EmptyBorder(20, 0, 0, 0));
+        
+        JLabel bioLabel = new JLabel("Bio");
+        bioLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        bioLabel.setForeground(TEXT_SECONDARY);
+        bioLabel.setBorder(new EmptyBorder(0, 0, 8, 0));
+        
+        JTextArea bioField = new JTextArea(aboutText.getText());
+        bioField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        bioField.setRows(6);
+        bioField.setLineWrap(true);
+        bioField.setWrapStyleWord(true);
+        bioField.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        JScrollPane bioScroll = new JScrollPane(bioField);
+        bioScroll.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
+        
+        bioPanel.add(bioLabel, BorderLayout.NORTH);
+        bioPanel.add(bioScroll, BorderLayout.CENTER);
+
+        contentPanel.add(formPanel);
+        contentPanel.add(bioPanel);
+
+        // Buttons
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.setBorder(new EmptyBorder(15, 20, 15, 20));
+
+        ModernButton saveButton = new ModernButton("Save Changes");
+        saveButton.setPreferredSize(new Dimension(140, 40));
+        
+        JButton cancelButton = new JButton("Cancel");
+        cancelButton.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        cancelButton.setBackground(Color.WHITE);
+        cancelButton.setBorderPainted(false);
+        cancelButton.setFocusPainted(false);
+        cancelButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        saveButton.addActionListener(e -> {
+            nameLabel.setText(nameField.getText());
+            ageValLabel.setText(ageField.getText());
+            addressValLabel.setText(addressField.getText());
+            emailValLabel.setText(emailField.getText());
+            contactValLabel.setText(contactField.getText());
+            aboutText.setText(bioField.getText());
+            dialog.dispose();
+        });
+
+        cancelButton.addActionListener(e -> dialog.dispose());
+
+        buttonPanel.add(cancelButton);
+        buttonPanel.add(saveButton);
+
+        dialog.add(contentPanel, BorderLayout.CENTER);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+        dialog.setVisible(true);
+    }
     
-    // Store reference to embedded image placeholder for updates
-    private static ImagePlaceholder embeddedImagePlaceholder = null;
+    private void addFormRow(JPanel panel, String labelText, JTextField field) {
+        JLabel label = new JLabel(labelText);
+        label.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        label.setForeground(TEXT_SECONDARY);
+        panel.add(label);
+        panel.add(field);
+    }
+
+    private JTextField createStyledTextField(String text) {
+        JTextField field = new JTextField(text);
+        field.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        field.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(200, 200, 200)),
+            BorderFactory.createEmptyBorder(5, 8, 5, 8)
+        ));
+        return field;
+    }
+
+    private JTabbedPane createContentTabs() {
+        JTabbedPane tabs = new JTabbedPane();
+        tabs.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        tabs.setBackground(MAIN_BG);
+        tabs.setFocusable(false);
+
+        // Tab 1: About Me
+        tabs.addTab("About Me", createAboutPanel());
+
+        // Tab 2: Registered Pets History
+        tabs.addTab("Registered Pets", createHistoryPanel(getRegisteredPetsData(), new String[]{"Pet Name", "Type", "Breed", "Health Status", "Status"}));
+
+        // Tab 3: Adopted Pets History
+        tabs.addTab("Adoption History", createHistoryPanel(getAdoptedPetsData(), new String[]{"Pet Name", "Type", "Breed", "Health Status", "Status"}));
+
+        return tabs;
+    }
+
+    private JPanel createAboutPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(MAIN_BG);
+        panel.setBorder(new EmptyBorder(10, 0, 0, 0));
+
+        // Use a Card-like panel for the content
+        JPanel card = new RoundedPanel(15, CARD_BG);
+        card.setLayout(new BorderLayout());
+        card.setBorder(new EmptyBorder(30, 30, 30, 30));
+
+        aboutText = new JTextArea();
+        aboutText.setText("Hi, I'm Alex! \n\n" +
+                "I have been a passionate animal lover since I was a child. " +
+                "I actively participate in local shelter programs and have dedicated my free time to fostering kittens and walking dogs.\n\n" +
+                "My goal is to create a safe environment for all pets and ensure every stray finds a loving home. " +
+                "Currently, I own two dogs and a parrot, and I'm looking to adopt a cat soon.");
+        aboutText.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        aboutText.setForeground(TEXT_PRIMARY);
+        aboutText.setLineWrap(true);
+        aboutText.setWrapStyleWord(true);
+        aboutText.setEditable(false);
+        aboutText.setOpaque(false); // Make transparent to show card bg
+        aboutText.setBorder(null);
+
+        JLabel bioHeader = new JLabel("Biography");
+        bioHeader.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        bioHeader.setForeground(ACCENT_COLOR);
+        bioHeader.setBorder(new EmptyBorder(0, 0, 20, 0));
+        
+        card.add(bioHeader, BorderLayout.NORTH);
+        card.add(aboutText, BorderLayout.CENTER);
+        
+        panel.add(card, BorderLayout.CENTER); // Align top
+        return panel;
+    }
+
+    private JPanel createHistoryPanel(Object[][] data, String[] columns) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(MAIN_BG);
+        panel.setBorder(new EmptyBorder(10, 0, 0, 0));
+        
+        // Card wrapper
+        JPanel card = new RoundedPanel(15, CARD_BG);
+        card.setLayout(new BorderLayout());
+        card.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        DefaultTableModel model = new DefaultTableModel(data, columns) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
+        JTable table = new JTable(model);
+        table.setRowHeight(40); // Taller rows
+        table.setShowVerticalLines(false);
+        table.setIntercellSpacing(new Dimension(0, 0));
+        table.setFillsViewportHeight(true);
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        table.setSelectionBackground(new Color(232, 246, 254));
+        table.setSelectionForeground(Color.BLACK);
+        
+        // Header Styling
+        JTableHeader header = table.getTableHeader();
+        header.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        header.setForeground(new Color(100, 100, 100));
+        header.setBackground(Color.WHITE);
+        header.setPreferredSize(new Dimension(0, 45));
+        header.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, new Color(240, 240, 240)));
+        header.setReorderingAllowed(false);
+
+        // Apply custom renderer for "Status" column to color text
+        for (int i = 0; i < table.getColumnCount(); i++) {
+            if ("Status".equalsIgnoreCase(table.getColumnName(i))) {
+                table.getColumnModel().getColumn(i).setCellRenderer(new StatusCellRenderer());
+            } else {
+                table.getColumnModel().getColumn(i).setCellRenderer(new PaddingCellRenderer());
+            }
+        }
+
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.getViewport().setBackground(Color.WHITE);
+
+        card.add(scrollPane, BorderLayout.CENTER);
+        panel.add(card, BorderLayout.CENTER);
+        return panel;
+    }
+
+    // --- Mock Data Generators ---
+
+    private Object[][] getRegisteredPetsData() {
+        return new Object[][]{
+            {"Bella", "Dog", "Labrador", "Vaccinated", "Available"},
+            {"Charlie", "Cat", "Siamese", "Healthy", "Available"},
+            {"Max", "Dog", "Beagle", "Injured", "Not Available"},
+            {"Luna", "Rabbit", "Netherland Dwarf", "Checkup Needed", "Available"},
+            {"Daisy", "Hamster", "Syrian", "Healthy", "Available"}
+        };
+    }
+
+    private Object[][] getAdoptedPetsData() {
+        return new Object[][]{
+            {"Rocky", "Dog", "German Shepherd", "Healthy", "Adopted"},
+            {"Coco", "Bird", "Macaw", "Vaccinated", "Adopted"},
+            {"Misty", "Cat", "Persian", "Under Treatment", "Available"}
+        };
+    }
+
+    // --- Custom Components ---
 
     /**
-     * Custom component to draw a rounded placeholder or a rounded user-selected image.
+     * Custom Cell Renderer for standard columns to add padding.
      */
-    class ImagePlaceholder extends JComponent {
-        private Color sky = new Color(206, 230, 245);
-        private Color sun = new Color(250, 215, 90);
-        private Color mountain = new Color(145, 210, 144);
-        private Image displayImage = null;
-        private int arc = 25; // Arc width and height for rounded corners
-
-        public ImagePlaceholder(int width, int height) {
-            setPreferredSize(new Dimension(width, height));
-        }
-
-        public void setImage(Image img) {
-            this.displayImage = img;
-            this.repaint();
-        }
-
+    static class PaddingCellRenderer extends DefaultTableCellRenderer {
         @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            Graphics2D g2 = (Graphics2D) g.create(); // Create a copy to not affect other components
-            
-            // Enable antialiasing for smooth corners and text
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            
-            int width = getWidth();
-            int height = getHeight();
-
-            // Create a rounded rectangle shape to clip the drawing
-            RoundRectangle2D.Float roundedRect = new RoundRectangle2D.Float(0, 0, width, height, arc, arc);
-            g2.setClip(roundedRect);
-
-            if (displayImage != null) {
-                // If an image is set, draw it, scaled to fit the component
-                g2.drawImage(displayImage, 0, 0, width, height, this);
-            } else {
-                // Otherwise, draw the default placeholder
-                g2.setColor(sky);
-                g2.fillRect(0, 0, width, height);
-
-                g2.setColor(sun);
-                int sunDiameter = width / 4;
-                g2.fillOval(width / 8, height / 8, sunDiameter, sunDiameter);
-
-                g2.setColor(mountain);
-                Polygon p = new Polygon();
-                p.addPoint(0, (int)(height * 0.75));
-                p.addPoint((int)(width * 0.5), (int)(height * 0.33));
-                p.addPoint((int)(width * 0.75), (int)(height * 0.5));
-                p.addPoint(width, (int)(height * 0.75));
-                p.addPoint(width, height);
-                p.addPoint(0, height);
-                g2.fillPolygon(p);
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            setBorder(noFocusBorder); // Remove focus dotted line
+            if (c instanceof JLabel) {
+                ((JLabel) c).setBorder(new EmptyBorder(0, 10, 0, 10)); // Add left/right padding
             }
-            
-            // Dispose of the graphics copy
-            g2.dispose();
+            if (!isSelected) {
+                 // Alternating row colors
+                c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(250, 250, 252));
+            }
+            return c;
         }
     }
 
     /**
-     * Custom JButton with rounded corners and hover/press effects.
+     * Custom Cell Renderer to color text based on status availability.
      */
-    class RoundedButton extends JButton {
-        private Color bgColor;
-        private Color fgColor;
-
-        public RoundedButton(String text, Color background, Color foreground) {
-            super(text);
-            this.bgColor = background;
-            this.fgColor = foreground;
-
-            setForeground(fgColor);
-            setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16)); // Increased from 12
-            setCursor(new Cursor(Cursor.HAND_CURSOR));
+    static class StatusCellRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
             
-            // Make the button transparent so we can draw our own shape
-            setContentAreaFilled(false);
-            setFocusPainted(false);
-            setBorderPainted(false);
+            setBorder(noFocusBorder);
+            if (c instanceof JLabel) ((JLabel) c).setBorder(new EmptyBorder(0, 10, 0, 10));
+
+            // Background logic for alternating rows
+            if (!isSelected) {
+                c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(250, 250, 252));
+            }
+            
+            if (value instanceof String) {
+                String status = (String) value;
+                Font f = c.getFont();
+                c.setFont(f.deriveFont(Font.BOLD)); // Make status bold
+
+                if (status.equalsIgnoreCase("Available")) {
+                    c.setForeground(new Color(46, 204, 113)); // Emerald Green
+                } else if (status.equalsIgnoreCase("Not Available") || status.equalsIgnoreCase("Adopted")) {
+                    c.setForeground(new Color(231, 76, 60)); // Alizarin Red
+                } else {
+                    c.setForeground(TEXT_PRIMARY);
+                }
+            }
+            return c;
+        }
+    }
+
+    /**
+     * A panel that draws a rounded rectangle background.
+     */
+    static class RoundedPanel extends JPanel {
+        private int cornerRadius;
+        private Color backgroundColor;
+
+        public RoundedPanel(int radius, Color bgColor) {
+            this.cornerRadius = radius;
+            this.backgroundColor = bgColor;
             setOpaque(false);
         }
 
         @Override
         protected void paintComponent(Graphics g) {
-            Graphics2D g2 = (Graphics2D) g.create();
+            super.paintComponent(g);
+            Graphics2D g2 = (Graphics2D) g;
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-            // Set color based on button state
-            if (getModel().isPressed()) {
-                g2.setColor(bgColor.darker());
-            } else if (getModel().isRollover()) {
-                g2.setColor(bgColor.brighter());
-            } else {
-                g2.setColor(bgColor);
-            }
-
-            // Draw the rounded rectangle
-            g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
-
-            // Let the parent class paint the text
-            super.paintComponent(g2);
-            g2.dispose();
+            
+            g2.setColor(backgroundColor);
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), cornerRadius, cornerRadius);
+            
+            // Subtle border
+            g2.setColor(new Color(230, 230, 230));
+            g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, cornerRadius, cornerRadius);
         }
     }
 
     /**
-     * A custom JPanel with a subtle gradient background.
+     * A panel with a vertical gradient background.
      */
-    class GradientPanel extends JPanel {
-        public GradientPanel(LayoutManager layout) {
-            super(layout);
+    static class GradientPanel extends JPanel {
+        private Color color1;
+        private Color color2;
+
+        public GradientPanel(Color c1, Color c2) {
+            this.color1 = c1;
+            this.color2 = c2;
         }
 
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
-            Graphics2D g2d = (Graphics2D) g;
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
             int w = getWidth();
             int h = getHeight();
-            // A subtle light grey to white gradient
-            Color color1 = new Color(238, 238, 238);
-            Color color2 = new Color(252, 252, 252);
-            GradientPaint gp = new GradientPaint(0, 0, color1, 0, h, color2);
-            g2d.setPaint(gp);
-            g2d.fillRect(0, 0, w, h);
+            GradientPaint gp = new GradientPaint(0, 0, color1, w, h, color2);
+            g2.setPaint(gp);
+            g2.fillRect(0, 0, w, h);
         }
     }
 
-
-    public UserProfile() {
-        setTitle("User Profile");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // Changed from DO_NOTHING_ON_CLOSE
-        setSize(1200, 800);
-        setLocationRelativeTo(null);
-        
-        // Use the new GradientPanel for the main background
-        JPanel mainPanel = new GradientPanel(new GridBagLayout());
-        
-        // Use a softer, off-white for the content panel
-        Color contentBgColor = new Color(248, 249, 250);
-        
-        JPanel contentPanel = new JPanel(new GridBagLayout());
-        contentPanel.setBackground(contentBgColor);
-        contentPanel.setOpaque(true);
-
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(20, 20, 20, 20);
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.weightx = 1.0;
-        gbc.weighty = 1.0;
-        mainPanel.add(contentPanel, gbc); // Add content panel directly
-
-        // --- Top Buttons (Using new RoundedButton) ---
-        JButton editProfileButton = new RoundedButton("EDIT PROFILE", new Color(34, 177, 76), Color.WHITE);
-        editProfileButton.addActionListener(this); 
-
-        gbc = new GridBagConstraints();
-        gbc.gridx = 2;
-        gbc.gridy = 0;
-        gbc.anchor = GridBagConstraints.NORTHEAST;
-        gbc.insets = new Insets(10, 10, 10, 10);
-        contentPanel.add(editProfileButton, gbc);
-
-        // --- Left Panel (Large Image) ---
-        JPanel leftPanel = new JPanel();
-        leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
-        leftPanel.setBackground(contentBgColor);
-
-        largeImage = new ImagePlaceholder(350, 350); // Increased from 250x250
-        // Set shared image if it exists when creating main profile
-        if (sharedProfileImage != null) {
-            largeImage.setImage(sharedProfileImage);
-        }
-        largeImage.setAlignmentX(Component.CENTER_ALIGNMENT);
-        leftPanel.add(largeImage);
-
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.gridheight = 2;
-        gbc.anchor = GridBagConstraints.NORTHWEST;
-        gbc.insets = new Insets(20, 10, 10, 20);
-        contentPanel.add(leftPanel, gbc);
-
-        // --- Right Panel (Info, Buttons, Small Images) ---
-        JPanel rightPanel = new JPanel(new GridBagLayout());
-        rightPanel.setBackground(contentBgColor); // Changed from Color.WHITE
-
-        // Name
-        nameLabel = new JLabel(userName);
-        nameLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 36)); // Increased from 28
-        nameLabel.setForeground(Color.BLACK);
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.insets = new Insets(0, 10, 10, 10);
-        rightPanel.add(nameLabel, gbc);
-        
-        // Contact Info
-        infoLabel = new JLabel();
-        updateInfoLabel();
-        infoLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 18)); // Increased from 14
-        infoLabel.setForeground(Color.BLACK);
-        gbc.gridy = 1;
-        rightPanel.add(infoLabel, gbc);
-
-        // Separator Line
-        JSeparator separator = new JSeparator();
-        gbc.gridy = 2;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(10, 10, 10, 10);
-        rightPanel.add(separator, gbc);
-
-        // "REGISTERED PET" and "ABOUT" Buttons
-        JPanel greyButtonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        greyButtonsPanel.setBackground(contentBgColor);
-        
-        regPetButton = new JButton("REGISTERED PET");
-        styleTransparentButton(regPetButton, Color.BLACK); 
-        regPetButton.addActionListener(this); 
-        
-        aboutButton = new JButton("ABOUT");
-        styleTransparentButton(aboutButton, Color.BLACK); 
-        aboutButton.addActionListener(this); 
-
-        // Set initial highlight state (REGISTERED PET is default)
-        highlightButton(regPetButton, true);
-        highlightButton(aboutButton, false);
-
-        greyButtonsPanel.add(regPetButton);
-        greyButtonsPanel.add(Box.createRigidArea(new Dimension(15, 0)));
-        greyButtonsPanel.add(aboutButton);
-
-        gbc.gridy = 3;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.insets = new Insets(10, 10, 20, 10);
-        rightPanel.add(greyButtonsPanel, gbc);
-
-        // --- "Registered Pet" Panel Card ---
-        JPanel regPetPanel = createImageGalleryPanel();
-        regPetPanel.setBackground(contentBgColor);
-
-        // --- "About" Panel Card ---
-        JPanel aboutPanel = createImageGalleryPanel();
-        aboutPanel.setBackground(contentBgColor);
-
-        // --- Create the CardLayout Panel ---
-        bottomCardLayout = new CardLayout();
-        bottomContentPanel = new JPanel(bottomCardLayout);
-        bottomContentPanel.setBackground(contentBgColor); // Changed from Color.WHITE
-        
-        bottomContentPanel.add(regPetPanel, "PETS");
-        bottomContentPanel.add(aboutPanel, "ABOUT");
-        
-        gbc.gridy = 4;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.insets = new Insets(0, 10, 10, 10);
-        rightPanel.add(bottomContentPanel, gbc); 
-
-        // Add Right Panel to Content Panel
-        gbc = new GridBagConstraints();
-        gbc.gridx = 1;
-        gbc.gridy = 1;
-        gbc.gridwidth = 2; 
-        gbc.weightx = 1.0; 
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.NORTHWEST;
-        gbc.insets = new Insets(20, 10, 10, 10);
-        contentPanel.add(rightPanel, gbc);
-
-        // Bottom-filler
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.weighty = 1.0;
-        contentPanel.add(new JLabel(), gbc);
-
-        add(mainPanel);
-    }
-
-    // Create a panel that matches the image layout with 3 images in a purple bordered container with scroll
-    private JPanel createImageGalleryPanel() {
-        JPanel galleryPanel = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2d = (Graphics2D) g.create();
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
-                // Draw purple border similar to the image
-                g2d.setColor(new Color(138, 43, 226)); // Purple color
-                g2d.setStroke(new BasicStroke(3.0f)); // Thick border
-                g2d.drawRoundRect(2, 2, getWidth() - 4, getHeight() - 4, 10, 10);
-                
-                g2d.dispose();
-            }
-        };
-        
-        // Create inner content panel that will hold the images
-        JPanel contentPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 15));
-        contentPanel.setOpaque(false);
-        
-        // Add 3 unique image placeholders
-        for (int i = 0; i < 3; i++) {
-            ImagePlaceholder imagePlaceholder = createUniqueImagePlaceholder(160, 140);
-            contentPanel.add(imagePlaceholder);
-        }
-        
-        // Create scroll pane for the content
-        JScrollPane scrollPane = new JScrollPane(contentPanel);
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setBorder(null); // Remove border for cleaner look
-        scrollPane.setOpaque(false);
-        scrollPane.getViewport().setOpaque(false);
-        
-        // Customize scroll bar appearance
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        scrollPane.getHorizontalScrollBar().setUnitIncrement(16);
-        
-        // Set up the main gallery panel layout
-        galleryPanel.setLayout(new BorderLayout());
-        galleryPanel.setOpaque(false);
-        galleryPanel.setPreferredSize(new Dimension(600, 220)); // Slightly taller for scroll bars
-        galleryPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10)); // Inner padding
-        
-        // Add scroll pane to the gallery panel
-        galleryPanel.add(scrollPane, BorderLayout.CENTER);
-        
-        return galleryPanel;
-    }
-
-    // Create unique ImagePlaceholder instances to avoid duplication
-    private ImagePlaceholder createUniqueImagePlaceholder(int width, int height) {
-        return new ImagePlaceholder(width, height);
-    }
-
-    private void updateInfoLabel() {
-        String infoText = "<html><ul style='margin-left: 18px; padding: 0;'>"
-                + "<li style='margin-bottom: 5px;'>" + userEmail + "</li>"
-                + "<li style='margin-bottom: 5px;'>" + userContact + "</li>"
-                + "<li>" + userAddress + "</li>"
-                + "</ul></html>";
-        infoLabel.setText(infoText);
-    }
-
-    public void updateProfile(String newName, String newEmail, String newContact, String newAddress) {
-        this.userName = newName;
-        this.userEmail = newEmail;
-        this.userContact = newContact;
-        this.userAddress = newAddress;
-        nameLabel.setText(newName);
-        updateInfoLabel();
-    }
-
-    public void updateProfileImage(Image newImage) {
-        // Update shared image
-        sharedProfileImage = newImage;
-        
-        // Update main profile image
-        if (largeImage != null) {
-            largeImage.setImage(newImage);
-        }
-        
-        // Update embedded profile image
-        if (embeddedImagePlaceholder != null) {
-            embeddedImagePlaceholder.setImage(newImage);
-        }
-    }
-    
-    // Get shared profile image
-    public static Image getSharedProfileImage() {
-        return sharedProfileImage;
-    }
-
-    // Add method to highlight/unhighlight buttons
-    private void highlightButton(JButton button, boolean highlight) {
-        if (highlight) {
-            button.setForeground(new Color(34, 177, 76)); // Green color for active
-            button.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 18)); // Slightly larger and bold
-            button.setOpaque(true);
-            button.setBackground(new Color(240, 255, 240)); // Light green background
-            button.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(34, 177, 76), 2),
-                BorderFactory.createEmptyBorder(5, 10, 5, 10)
-            ));
-        } else {
-            button.setForeground(Color.BLACK); // Default color
-            button.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16)); // Normal size
-            button.setOpaque(false);
-            button.setBackground(null);
-            button.setBorder(BorderFactory.createEmptyBorder(7, 12, 7, 12)); // Maintain spacing
-        }
-        button.repaint();
-    }
-
-    // This method is now only for the text-like buttons
-    private void styleTransparentButton(JButton button, Color foreground) {
-        button.setForeground(foreground);
-        button.setOpaque(false);
-        button.setContentAreaFilled(false);
-        button.setBorderPainted(false);
-        button.setFocusPainted(false);
-        button.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        button.setBorder(BorderFactory.createEmptyBorder(7, 12, 7, 12)); // Add padding
-    }
-
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        String command = e.getActionCommand();
-
-        if ("EDIT PROFILE".equals(command)) {
-            EditProfileDialog dialog = new EditProfileDialog(this, userName, userEmail, userContact, userAddress);
-            dialog.setVisible(true);
-        } else if ("REGISTERED PET".equals(command)) {
-            // Update button highlights
-            highlightButton(regPetButton, true);
-            highlightButton(aboutButton, false);
-            bottomCardLayout.show(bottomContentPanel, "PETS");
-        } else if ("ABOUT".equals(command)) {
-            // Update button highlights
-            highlightButton(regPetButton, false);
-            highlightButton(aboutButton, true);
-            bottomCardLayout.show(bottomContentPanel, "ABOUT");
-        } else {
-            JOptionPane.showMessageDialog(this,
-                "'" + command + "' button clicked!",
-                "Button Clicked",
-                JOptionPane.INFORMATION_MESSAGE);
-        }
-    }
-
-    // Add method to get the main content panel for embedding
-    public JPanel getMainContentPanel() {
-        // Create a completely new panel structure for dashboard embedding
-        Color contentBgColor = new Color(248, 249, 250);
-        
-        JPanel embeddedPanel = new GradientPanel(new GridBagLayout());
-        JPanel contentPanel = new JPanel(new GridBagLayout());
-        contentPanel.setBackground(contentBgColor);
-        contentPanel.setOpaque(true);
-
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(20, 20, 20, 20);
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.weightx = 1.0;
-        gbc.weighty = 1.0;
-        embeddedPanel.add(contentPanel, gbc);
-
-        // Create new components for embedded version to avoid duplication
-        createEmbeddedComponents(contentPanel, contentBgColor);
-        
-        return embeddedPanel;
-    }
-
-    // Create components specifically for the embedded version
-    private void createEmbeddedComponents(JPanel contentPanel, Color contentBgColor) {
-        GridBagConstraints gbc;
-
-        // --- Top Buttons ---
-        JButton editProfileButton = new RoundedButton("EDIT PROFILE", new Color(34, 177, 76), Color.WHITE);
-        editProfileButton.addActionListener(this); 
-
-        gbc = new GridBagConstraints();
-        gbc.gridx = 2;
-        gbc.gridy = 0;
-        gbc.anchor = GridBagConstraints.NORTHEAST;
-        gbc.insets = new Insets(10, 10, 10, 10);
-        contentPanel.add(editProfileButton, gbc);
-
-        // --- Left Panel (Large Image) ---
-        JPanel leftPanel = new JPanel();
-        leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
-        leftPanel.setBackground(contentBgColor);
-
-        embeddedImagePlaceholder = createUniqueImagePlaceholder(350, 350);
-        // Set shared image if it exists
-        if (sharedProfileImage != null) {
-            embeddedImagePlaceholder.setImage(sharedProfileImage);
-        }
-        embeddedImagePlaceholder.setAlignmentX(Component.CENTER_ALIGNMENT);
-        leftPanel.add(embeddedImagePlaceholder);
-
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.gridheight = 2;
-        gbc.anchor = GridBagConstraints.NORTHWEST;
-        gbc.insets = new Insets(20, 10, 10, 20);
-        contentPanel.add(leftPanel, gbc);
-
-        // --- Right Panel ---
-        JPanel rightPanel = new JPanel(new GridBagLayout());
-        rightPanel.setBackground(contentBgColor);
-
-        // Name
-        JLabel embeddedNameLabel = new JLabel(userName);
-        embeddedNameLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 36));
-        embeddedNameLabel.setForeground(Color.BLACK);
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.insets = new Insets(0, 10, 10, 10);
-        rightPanel.add(embeddedNameLabel, gbc);
-        
-        // Contact Info
-        JLabel embeddedInfoLabel = new JLabel();
-        String infoText = "<html><ul style='margin-left: 18px; padding: 0;'>"
-                + "<li style='margin-bottom: 5px;'>" + userEmail + "</li>"
-                + "<li style='margin-bottom: 5px;'>" + userContact + "</li>"
-                + "<li>" + userAddress + "</li>"
-                + "</ul></html>";
-        embeddedInfoLabel.setText(infoText);
-        embeddedInfoLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 18));
-        embeddedInfoLabel.setForeground(Color.BLACK);
-        gbc.gridy = 1;
-        rightPanel.add(embeddedInfoLabel, gbc);
-
-        // Separator Line
-        JSeparator separator = new JSeparator();
-        gbc.gridy = 2;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(10, 10, 10, 10);
-        rightPanel.add(separator, gbc);
-
-        // Section Buttons
-        JPanel greyButtonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        greyButtonsPanel.setBackground(contentBgColor);
-        
-        JButton embeddedRegPetButton = new JButton("REGISTERED PET");
-        styleTransparentButton(embeddedRegPetButton, Color.BLACK); 
-        
-        JButton embeddedAboutButton = new JButton("ABOUT");
-        styleTransparentButton(embeddedAboutButton, Color.BLACK); 
-
-        // Set initial highlight state
-        highlightButton(embeddedRegPetButton, true);
-        highlightButton(embeddedAboutButton, false);
-
-        greyButtonsPanel.add(embeddedRegPetButton);
-        greyButtonsPanel.add(Box.createRigidArea(new Dimension(15, 0)));
-        greyButtonsPanel.add(embeddedAboutButton);
-
-        gbc.gridy = 3;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.insets = new Insets(10, 10, 20, 10);
-        rightPanel.add(greyButtonsPanel, gbc);
-
-        // Gallery panels
-        JPanel embeddedRegPetPanel = createImageGalleryPanel();
-        embeddedRegPetPanel.setBackground(contentBgColor);
-
-        JPanel embeddedAboutPanel = createImageGalleryPanel();
-        embeddedAboutPanel.setBackground(contentBgColor);
-
-        CardLayout embeddedBottomCardLayout = new CardLayout();
-        JPanel embeddedBottomContentPanel = new JPanel(embeddedBottomCardLayout);
-        embeddedBottomContentPanel.setBackground(contentBgColor);
-        
-        embeddedBottomContentPanel.add(embeddedRegPetPanel, "PETS");
-        embeddedBottomContentPanel.add(embeddedAboutPanel, "ABOUT");
-        
-        // Add action listeners for embedded buttons
-        embeddedRegPetButton.addActionListener(e -> {
-            highlightButton(embeddedRegPetButton, true);
-            highlightButton(embeddedAboutButton, false);
-            embeddedBottomCardLayout.show(embeddedBottomContentPanel, "PETS");
-        });
-        
-        embeddedAboutButton.addActionListener(e -> {
-            highlightButton(embeddedRegPetButton, false);
-            highlightButton(embeddedAboutButton, true);
-            embeddedBottomCardLayout.show(embeddedBottomContentPanel, "ABOUT");
-        });
-        
-        gbc.gridy = 4;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.insets = new Insets(0, 10, 10, 10);
-        rightPanel.add(embeddedBottomContentPanel, gbc); 
-
-        // Add Right Panel to Content Panel
-        gbc = new GridBagConstraints();
-        gbc.gridx = 1;
-        gbc.gridy = 1;
-        gbc.gridwidth = 2; 
-        gbc.weightx = 1.0; 
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.NORTHWEST;
-        gbc.insets = new Insets(20, 10, 10, 10);
-        contentPanel.add(rightPanel, gbc);
-
-        // Bottom-filler
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.weighty = 1.0;
-        contentPanel.add(new JLabel(), gbc);
-    }
-
-    public static void main(String[] args) {
-        try {
-            // Set Nimbus Look and Feel for a modern aesthetic
-            UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
-        } catch (Exception e) {
-            System.err.println("Failed to set Nimbus Look and Feel. Using default.");
-            // If Nimbus isn't available, it will fall back to the default
-        }
-
-        SwingUtilities.invokeLater(() -> {
-            UserProfile frame = new UserProfile();
-            frame.setVisible(true);
-        });
-    }
-
-    // =================================================================
-    // INNER CLASS FOR THE EDIT PROFILE DIALOG
-    // =================================================================
-    class EditProfileDialog extends JDialog implements ActionListener {
-
-        private JTextField nameField;
-        private JTextField emailField;
-        private JTextField contactField;
-        private JTextField addressField;
-        private JLabel imagePreviewLabel;
-        private ImageIcon selectedProfileImage = null;
-        private UserProfile owner;
-
-        public EditProfileDialog(UserProfile owner, String name, String email, String contact, String address) {
-            super(owner, "Edit Profile", true);
-            this.owner = owner;
-            
-            // Create gradient background panel instead of using default content pane
-            JPanel gradientBackgroundPanel = new GradientPanel(new GridBagLayout());
-            setContentPane(gradientBackgroundPanel);
-            
-            GridBagConstraints gbc = new GridBagConstraints();
-            gbc.insets = new Insets(15, 15, 15, 15);
-            gbc.anchor = GridBagConstraints.WEST;
-
-            // --- Form Fields ---
-            JLabel nameLabel = new JLabel("Name:");
-            nameLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
-            gbc.gridx = 0;
-            gbc.gridy = 0;
-            gradientBackgroundPanel.add(nameLabel, gbc);
-            
-            gbc.gridx = 1;
-            gbc.fill = GridBagConstraints.HORIZONTAL;
-            gbc.weightx = 1.0;
-            nameField = new JTextField(name, 30);
-            nameField.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
-            gradientBackgroundPanel.add(nameField, gbc);
-
-            JLabel emailLabel = new JLabel("Email:");
-            emailLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
-            gbc.gridx = 0;
-            gbc.gridy = 1;
-            gbc.fill = GridBagConstraints.NONE;
-            gbc.weightx = 0;
-            gradientBackgroundPanel.add(emailLabel, gbc);
-            
-            gbc.gridx = 1;
-            gbc.fill = GridBagConstraints.HORIZONTAL;
-            emailField = new JTextField(email, 30);
-            emailField.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
-            gradientBackgroundPanel.add(emailField, gbc);
-
-            JLabel contactLabel = new JLabel("Contact:");
-            contactLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
-            gbc.gridx = 0;
-            gbc.gridy = 2;
-            gradientBackgroundPanel.add(contactLabel, gbc);
-            
-            gbc.gridx = 1;
-            gbc.fill = GridBagConstraints.HORIZONTAL;
-            contactField = new JTextField(contact, 30);
-            contactField.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
-            gradientBackgroundPanel.add(contactField, gbc);
-
-            JLabel addressLabel = new JLabel("Address:");
-            addressLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
-            gbc.gridx = 0;
-            gbc.gridy = 3;
-            gradientBackgroundPanel.add(addressLabel, gbc);
-            
-            gbc.gridx = 1;
-            gbc.fill = GridBagConstraints.HORIZONTAL;
-            addressField = new JTextField(address, 30);
-            addressField.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
-            gradientBackgroundPanel.add(addressField, gbc);
-
-            // --- Image Preview Label ---
-            JLabel previewLabel = new JLabel("Image Preview:");
-            previewLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
-            gbc.gridx = 0;
-            gbc.gridy = 4;
-            gbc.anchor = GridBagConstraints.NORTHEAST;
-            gradientBackgroundPanel.add(previewLabel, gbc);
-
-            gbc.gridx = 1;
-            gbc.anchor = GridBagConstraints.WEST;
-            imagePreviewLabel = new JLabel("No image selected.");
-            imagePreviewLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
-            imagePreviewLabel.setPreferredSize(new Dimension(150, 150));
-            imagePreviewLabel.setBorder(BorderFactory.createLineBorder(Color.GRAY));
-            imagePreviewLabel.setHorizontalAlignment(JLabel.CENTER);
-            imagePreviewLabel.setOpaque(true);
-            imagePreviewLabel.setBackground(Color.WHITE); // Keep preview label background white for better contrast
-            gradientBackgroundPanel.add(imagePreviewLabel, gbc);
-
-            // --- Upload Image Button (in dialog) ---
-            JButton uploadButton = new JButton("UPLOAD IMAGE");
-            uploadButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
-            styleTransparentButton(uploadButton, Color.GRAY);
-            gbc.gridx = 1;
-            gbc.gridy = 5; 
-            gbc.fill = GridBagConstraints.NONE;
-            gbc.anchor = GridBagConstraints.WEST;
-            gradientBackgroundPanel.add(uploadButton, gbc);
-            uploadButton.addActionListener(this); 
-
-            // --- Save Changes Button (Using new RoundedButton) ---
-            JButton saveButton = new RoundedButton("SAVE CHANGES", new Color(34, 177, 76), Color.WHITE);
-            gbc.gridx = 0; 
-            gbc.gridwidth = 2; 
-            gbc.gridy = 6; 
-            gbc.anchor = GridBagConstraints.CENTER;
-            gbc.fill = GridBagConstraints.NONE; 
-            gradientBackgroundPanel.add(saveButton, gbc);
-            saveButton.addActionListener(this); 
-
-            pack(); 
-            setLocationRelativeTo(owner); 
+    /**
+     * Modern Rounded Button.
+     */
+    static class ModernButton extends JButton {
+        public ModernButton(String text) {
+            super(text);
+            setContentAreaFilled(false);
+            setFocusPainted(false);
+            setBorderPainted(false);
+            setFont(new Font("Segoe UI", Font.BOLD, 14));
+            setForeground(Color.WHITE);
+            setCursor(new Cursor(Cursor.HAND_CURSOR));
         }
 
         @Override
-        public void actionPerformed(ActionEvent e) {
-            String command = e.getActionCommand();
-            
-            if ("SAVE CHANGES".equals(command)) {
-                String newName = nameField.getText();
-                String newEmail = emailField.getText();
-                String newContact = contactField.getText();
-                String newAddress = addressField.getText();
-                owner.updateProfile(newName, newEmail, newContact, newAddress);
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-                if (selectedProfileImage != null) {
-                    owner.updateProfileImage(selectedProfileImage.getImage());
-                }
-                dispose();
-                
-            } else if ("UPLOAD IMAGE".equals(command)) {
-                JFileChooser fileChooser = new JFileChooser();
-                FileNameExtensionFilter filter = new FileNameExtensionFilter(
-                    "Image Files (jpg, png, gif)", "jpg", "jpeg", "png", "gif");
-                fileChooser.setFileFilter(filter);
-                
-                int returnValue = fileChooser.showOpenDialog(this);
-                if (returnValue == JFileChooser.APPROVE_OPTION) {
-                    File selectedFile = fileChooser.getSelectedFile();
-                    selectedProfileImage = new ImageIcon(selectedFile.getAbsolutePath());
-                    
-                    Image scaledImage = selectedProfileImage.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
-                    imagePreviewLabel.setIcon(new ImageIcon(scaledImage));
-                    imagePreviewLabel.setText(null); 
-                    
-                    // Immediately update the profile image for preview
-                    owner.updateProfileImage(selectedProfileImage.getImage());
-                }
+            if (getModel().isPressed()) {
+                g2.setColor(ACCENT_DARK);
+            } else if (getModel().isRollover()) {
+                g2.setColor(new Color(74, 163, 223)); // Lighter Blue
+            } else {
+                g2.setColor(ACCENT_COLOR);
             }
+
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+            super.paintComponent(g);
         }
+    }
+
+    /**
+     * Circular Profile Image.
+     */
+    static class ProfileImagePanel extends JPanel {
+        private final int size = 120;
+
+        public ProfileImagePanel() {
+            setPreferredSize(new Dimension(size, size));
+            setMaximumSize(new Dimension(size, size));
+            setOpaque(false);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            // 1. Draw White Circle Background
+            g2.setColor(Color.WHITE);
+            g2.fill(new Ellipse2D.Double(0, 0, size, size));
+
+            // 2. Draw Placeholder "Person" Icon
+            g2.setColor(new Color(220, 220, 220));
+            // Head
+            int headSize = 45;
+            g2.fill(new Ellipse2D.Double((size - headSize) / 2.0, 20, headSize, headSize));
+            // Body (Semi-circle)
+            int bodyWidth = 76;
+            int bodyHeight = 55;
+            g2.fillArc((size - bodyWidth) / 2, 68, bodyWidth, bodyHeight, 0, 180);
+
+            // 3. Draw Border Ring
+            g2.setColor(new Color(255, 255, 255, 100)); // Semi-transparent white ring
+            g2.setStroke(new BasicStroke(4));
+            g2.draw(new Ellipse2D.Double(2, 2, size - 4, size - 4));
+        }
+    }
+
+    // --- Main Entry Point ---
+    
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+                // Tweak tabbed pane defaults for better look
+                UIManager.put("TabbedPane.selected", Color.WHITE);
+                UIManager.put("TabbedPane.contentBorderInsets", new Insets(0, 0, 0, 0));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            new UserProfile().setVisible(true);
+        });
     }
 }

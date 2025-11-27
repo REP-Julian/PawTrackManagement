@@ -270,49 +270,53 @@ public class PetShop extends JFrame {
         }
         
         private void generateSampleInventory() {
-            String[] foodItems = {"Cattery best formula Cat&dog kitten snacks pure chicken treats freeze dried meat 500g", "Luca 1KG Dog and Cat Food Puppy/Kitten and Adult Nutrition Food All Breeds with Natural Ingredients", "50PCS Dog Treats Sausage for Training & Snacks", 
-                                "Cat Dry Food - Veterinarian Approved, All Life Stages 1kg", "Nutritious Petsup Freeze-Dried Treats for Dogs & Cats - 30g, Made with Real Meat, High Protein & Grain-Free", "Royal Canin RECOVERY DIET in Can for Dog & Cat WET inCAN 195g VET Range"};
-            String[] utilities = {"Dog Food Scoop Dog Cat Food Water Bowl Sealing Clip Silicone Collapsible Pet Bowl Dog Food Spoon", "Pet toy cat toy tumbler food leakage ball cat stick infrared laser cat toy", "Ins Pet Dog Plush Portable Phone Big Brother Toy Sounding bb Barking Paper Tibetan Food Toy Cat Dog Chewing", 
-                                "Dog Toys Tumbler Leakage Ball Pet Cat Food Dispenser Ball Adjustable Food Hole Roly IQ Treat", "Pet Outdoor Water Cup Portable Travel Cup Food Feeding Cup Dog Water Dispenser Cat Travel Dual-use Drinking Cup", "Pet Dog Toy for Small Medium Large Dogs Interactive Food Dispenser IQ Training Treat Toys Cat Slow Feeder"};
-            String[] accessories = {"Dog Bowl Dog Food Bowl Dog Drinking Water Bowl Non-slip Stainless Steel Durable Bowl Cat Food Bowl", "Paw. Automatic Pet Dog Cat Food Water Bowls Dispenser Gravity Pet Self Feeder Food Bowls Set 2in1", "Elizabeth Cone E-Collar Pet Cat Dog Cone Adjustable Safety Collar Circle Pet Head Cover Bite Anti", 
-                                  "Bamboo Pet Bowl Detachable Cat Dog Food Water Feeder Double Bowl Wooden 2in1 Bowl Spine Protection", "Pet Bowl Cat Bowl Dog Bowl 2 in 1 Food Bowl Drinking Bottle Set Puppy Kitty Food Bowls Water Bowl", "Sniffing Pads Consume Pets Energy Dog Educational Toys Dog Food Toys Cats Relieve Boredom Animals Slow Food Sniff"};
-            String[] healthcare = {"PUAINTA Multi Vitamin b for Dogs and Cats Hair Loss Oral Care Vitamin b1 b2 b6 Supplement 30ml", "Omogs Probiotics for Dogs and Cats Pet's Probiotic Food Supplements Digestion&Immune 250 Tablets", "Petsmed Immuno Care Syrup for Dog and Cat 100ML (1 Bottle)", 
-                                 "Happy Tummy Cats ​​Treats Rich in Multivitamins & Probiotics Immunity Boost Cat Food For Overall Cat", "VCO organic extra virgin coconut oil for Pets Salmon oil (rich in Omega-3,EPA and DHA) for Dog&Cat", "Bark n’ bite Virgin Coconut Oil for dogs & cats 250 ml (Organic Cold Pressed VCO)"};
+            // Only items explicitly listed here will be added — no duplication.
+            String[] foodItems = {"Nutricare Cat Food for All Ages 1kg", 
+            "100g Dog Food Beef Dog Treats Dog Snack Pet Dog Biscuit Treats Snack Delicious", 
+            "Pet Snacks Dog Biscuit Cat Food Dog Snack Cute Footprint Shaped Cookies Dog Food", 
+            "Nutricare Organic Dry Cat Food for All Life Stages (500g/1kg)", 
+            "1kg MILK ONE Goat’s Milk Replacer – For Dogs, Cats, Puppies, Kittens & Rabbits", 
+            "Doozzie Appetite Booster For Dogs and Cats - for Picky Eaters Food Toppers Pet Food"};
+            String[] utilities = {"",
+            "", 
+            "", 
+            "", 
+            "", 
+            ""}; // leave empty array if no sample input
+            String[] accessories = {"",
+            "", 
+            "", 
+            "", 
+            "", 
+            ""};
+            String[] healthcare = {};
             
-            addItemsToInventory(foodItems, "Food", 15);
-            addItemsToInventory(utilities, "Utilities", 12);
-            addItemsToInventory(accessories, "Accessories", 10);
-            addItemsToInventory(healthcare, "Healthcare", 8);
+            addItemsFromNames(foodItems, "Food");
+            addItemsFromNames(utilities, "Utilities");
+            addItemsFromNames(accessories, "Accessories");
+            addItemsFromNames(healthcare, "Healthcare");
             
             notifyListeners();
         }
         
-        private void addItemsToInventory(String[] itemNames, String category, int count) {
+        private void addItemsFromNames(String[] itemNames, String category) {
             Random random = new Random();
-            for (int i = 0; i < count; i++) {
-                String name = itemNames[random.nextInt(itemNames.length)];
+            // Use a set to ensure names are unique and skip empty names
+            Set<String> unique = Arrays.stream(itemNames)
+                                       .filter(Objects::nonNull)
+                                       .map(String::trim)
+                                       .filter(s -> !s.isEmpty())
+                                       .collect(Collectors.toCollection(LinkedHashSet::new));
+            
+            for (String name : unique) {
+                // avoid adding duplicates if an item with same name+category already exists
+                boolean exists = items.stream()
+                                      .anyMatch(it -> it.getName().equalsIgnoreCase(name) && it.getCategory().equals(category));
+                if (exists) continue;
                 
-                // Generate random prices with 2-3 digits (limited to 1000)
-                double price;
-                int priceType = random.nextInt(3); // 0, 1, or 2
-                
-                switch (priceType) {
-                    case 0: // 2-digit prices (10-99)
-                        price = 10 + random.nextDouble() * 90; // 10.00 to 99.99
-                        break;
-                    case 1: // 3-digit prices (100-999)
-                        price = 100 + random.nextDouble() * 500; // 100.00 to 999.99
-                        break;
-                    case 2: // Exactly 1000 or close to it (950-1000)
-                        price = 550 + random.nextDouble() * 50; // 950.00 to 1000.00
-                        break;
-                    default:
-                        price = 100; // fallback
-                }
-                
-                // Round to 2 decimal places and ensure max 1000
-                price = Math.min(1000.0, Math.round(price * 100.0) / 100.0);
-                
+                // Generate a reasonable random price and stock
+                double price = 50 + random.nextDouble() * 450; // 50.00 to 500.00
+                price = Math.round(price * 100.0) / 100.0;
                 int stock = random.nextInt(25) + 5;
                 String description = "Premium quality " + category.toLowerCase() + " for your beloved pet";
                 
@@ -985,16 +989,10 @@ public class PetShop extends JFrame {
              // Try to load image from path and scale to fit the imageHeight
              ImageIcon icon = loadImageIcon(item.getImagePath(), imageHeight * 2, imageHeight); // width heuristic
              if (icon != null) imageLabel.setIcon(icon);
+             // Make image non-interactive / static
              imageLabel.setOpaque(false);
-             imageLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
-             
-             // Add click listener to image for full-screen view
-             imageLabel.addMouseListener(new MouseAdapter() {
-                 @Override
-                 public void mouseClicked(MouseEvent e) {
-                     showProductDetailModal(item);
-                 }
-             });
+             imageLabel.setCursor(Cursor.getDefaultCursor());
+             // Intentionally do NOT add a MouseListener so image is static (click does nothing)
              
              // Enhanced product info panel with responsive fonts and better spacing
             JPanel infoPanel = new JPanel();
@@ -1077,11 +1075,29 @@ public class PetShop extends JFrame {
             buyNowCardBtn.setFont(new Font("Segoe UI", Font.BOLD, Math.max(13, brandFontSize)));
             buyNowCardBtn.setEnabled(item.getStock() > 0);
             buyNowCardBtn.addActionListener(e -> {
-                // add one item then immediately perform checkout
-                cartManager.addItem(item, 1);
-                performCheckout();
-            });
-
+                // Priority: open external links for known sample items
+                if ("Nutricare Cat Food for All Ages 1kg".equals(item.getName())) {
+                    String url = "https://shopee.ph/Nutricare-Cat-Food-for-All-Ages-1kg-i.1245834910.26507849945?extraParams=%7B%22display_model_id%22%3A236648133793%2C%22model_selection_logic%22%3A3%7D&rModelId=236648133793&sp_atk=5cc0fe79-e351-4b38-96a5-3868e298bd9d&vItemId=29286857950&vModelId=260475215872&vShopId=1257811163&xptdk=5cc0fe79-e351-4b38-96a5-3868e298bd9d";
+                    openExternalLink(url);
+                } else if ("100g Dog Food Beef Dog Treats Dog Snack Pet Dog Biscuit Treats Snack Delicious".equals(item.getName())) {
+                    String url = "https://shopee.ph/%E3%80%90100g-Dog-Food-Beef-Dog-Treats-Dog-Snack-Pet-Dog-Biscuit-Treats-Snack-Delicious-i.413523651.25420174080?extraParams=%7B%22display_model_id%22%3A300709405714%2C%22model_selection_logic%22%3A3%7D&sp_atk=e13e60fb-4a44-4bc0-bd2e-e94d299bf6f1&xptdk=e13e60fb-4a44-4bc0-bd2e-e94d299bf6f1";
+                    openExternalLink(url);
+                } else if ("Pet Snacks Dog Biscuit Cat Food Dog Snack Cute Footprint Shaped Cookies Dog Food".equals(item.getName())) {
+                    String url = "https://shopee.ph/Pet-Snacks-Dog-Biscuit-Cat-Food-Dog-Snack-Cute-Footprint-Shaped-Cookies-Dog-Food-i.1527404575.27187551801?extraParams=%7B%22display_model_id%22%3A270371574128%2C%22model_selection_logic%22%3A3%7D&sp_atk=cf977608-b7f3-4db1-bab6-2843ed2443d7&xptdk=cf977608-b7f3-4db1-bab6-2843ed2443d7";
+                    openExternalLink(url);
+                } else if ("Nutricare Organic Dry Cat Food for All Life Stages (500g/1kg)".equals(item.getName())) {
+                    String url = "https://shopee.ph/Nutricare-Organic-Dry-Cat-Food-for-All-Life-Stages-(500g-1kg)-i.1015115295.19081420829?extraParams=%7B%22display_model_id%22%3A187375547909%2C%22model_selection_logic%22%3A3%7D&rModelId=187375547909&sp_atk=792451c6-8510-4358-bc96-4a588a8f1128&vItemId=27490351407&vModelId=216220267727&vShopId=1257811163&xptdk=792451c6-8510-4358-bc96-4a588a8f1128";
+                    openExternalLink(url);
+                } else if ("Doozzie Appetite Booster For Dogs and Cats - for Picky Eaters Food Toppers Pet Food".equals(item.getName())) {
+                    String url = "https://shopee.ph/Doozzie-Appetite-Booster-For-Dogs-and-Cats-for-Picky-Eaters-Food-Toppers-Pet-Food-i.622568310.23534456037?extraParams=%7B%22display_model_id%22%3A175900743655%2C%22model_selection_logic%22%3A3%7D&sp_atk=562289c4-808e-4185-99e3-82a0f9ef6380&xptdk=562289c4-808e-4185-99e3-82a0f9ef638000000000000000000";
+                    openExternalLink(url);
+                } else {
+                     // default behavior for other items
+                     cartManager.addItem(item, 1);
+                     performCheckout();
+                 }
+             });
+        
             // Action panel to hold both buttons side-by-side and avoid overlap
             JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
             actionPanel.setOpaque(false);
@@ -1831,7 +1847,7 @@ public class PetShop extends JFrame {
         JPanel circlePanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
-                               super.paintComponent(g);
+                super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g.create();
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 
@@ -1889,6 +1905,7 @@ public class PetShop extends JFrame {
         stockLabel.setFont(UITheme.getFont(UITheme.FontWeight.MEDIUM, 16));
         stockLabel.setForeground(item.getStock() > 0 ? UITheme.SUCCESS : UITheme.DANGER);
         
+               
         // Shipping info
         JLabel shippingLabel = new JLabel(item.hasFreeShipping() ? 
             "Free Shipping Available" : 
@@ -1947,9 +1964,32 @@ public class PetShop extends JFrame {
         buyNowBtn.setFont(UITheme.getFont(UITheme.FontWeight.BOLD, 16));
         buyNowBtn.setEnabled(item.getStock() > 0);
         buyNowBtn.addActionListener(e -> {
-            cartManager.addItem(item, 1);
-            modal.dispose();
-            performCheckout();
+            // Priority: open external links for known sample items
+            if ("Nutricare Cat Food for All Ages 1kg".equals(item.getName())) {
+                String url = "https://shopee.ph/Nutricare-Cat-Food-for-All-Ages-1kg-i.1245834910.26507849945?extraParams=%7B%22display_model_id%22%3A236648133793%2C%22model_selection_logic%22%3A3%7D&rModelId=236648133793&sp_atk=5cc0fe79-e351-4b38-96a5-3868e298bd9d&vItemId=29286857950&vModelId=260475215872&vShopId=1257811163&xptdk=5cc0fe79-e351-4b38-96a5-3868e298bd9d";
+                openExternalLink(url);
+                modal.dispose();
+            } else if ("100g Dog Food Beef Dog Treats Dog Snack Pet Dog Biscuit Treats Snack Delicious".equals(item.getName())) {
+                String url = "https://shopee.ph/%E3%80%90100g-Dog-Food-Beef-Dog-Treats-Dog-Snack-Pet-Dog-Biscuit-Treats-Snack-Delicious-i.413523651.25420174080?extraParams=%7B%22display_model_id%22%3A300709405714%2C%22model_selection_logic%22%3A3%7D&sp_atk=e13e60fb-4a44-4bc0-bd2e-e94d299bf6f1&xptdk=e13e60fb-4a44-4bc0-bd2e-e94d299bf6f1";
+                openExternalLink(url);
+                modal.dispose();
+            } else if ("Pet Snacks Dog Biscuit Cat Food Dog Snack Cute Footprint Shaped Cookies Dog Food".equals(item.getName())) {
+                String url = "https://shopee.ph/Pet-Snacks-Dog-Biscuit-Cat-Food-Dog-Snack-Cute-Footprint-Shaped-Cookies-Dog-Food-i.1527404575.27187551801?extraParams=%7B%22display_model_id%22%3A270371574128%2C%22model_selection_logic%22%3A3%7D&sp_atk=cf977608-b7f3-4db1-bab6-2843ed2443d7&xptdk=cf977608-b7f3-4db1-bab6-2843ed2443d7";
+                openExternalLink(url);
+                modal.dispose();
+            } else if ("Nutricare Organic Dry Cat Food for All Life Stages (500g/1kg)".equals(item.getName())) {
+                String url = "https://shopee.ph/Nutricare-Organic-Dry-Cat-Food-for-All-Life-Stages-(500g-1kg)-i.1015115295.19081420829?extraParams=%7B%22display_model_id%22%3A187375547909%2C%22model_selection_logic%22%3A3%7D&rModelId=187375547909&sp_atk=792451c6-8510-4358-bc96-4a588a8f1128&vItemId=27490351407&vModelId=216220267727&vShopId=1257811163&xptdk=792451c6-8510-4358-bc96-4a588a8f1128";
+                openExternalLink(url);
+                modal.dispose();
+            } else if ("Doozzie Appetite Booster For Dogs and Cats - for Picky Eaters Food Toppers Pet Food".equals(item.getName())) {
+                String url = "https://shopee.ph/Doozzie-Appetite-Booster-For-Dogs-and-Cats-for-Picky-Eaters-Food-Toppers-Pet-Food-i.622568310.23534456037?extraParams=%7B%22display_model_id%22%3A175900743655%2C%22model_selection_logic%22%3A3%7D&sp_atk=562289c4-808e-4185-99e3-82a0f9ef6380&xptdk=562289c4-808e-4185-99e3-82a0f9ef638000000000000000000";
+                openExternalLink(url);
+                modal.dispose();
+            } else {
+                cartManager.addItem(item, 1);
+                modal.dispose();
+                performCheckout();
+            }
         });
         
         buttonPanel.add(addToCartBtn);
@@ -1978,6 +2018,22 @@ public class PetShop extends JFrame {
         } catch (Exception ex) {
             // If loading fails return null so UI can handle missing images gracefully
             return null;
+        }
+    }
+
+    // Open external URL in system default browser. Errors are shown to the user.
+    private void openExternalLink(String url) {
+        try {
+            if (java.awt.Desktop.isDesktopSupported()) {
+                java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
+            } else {
+                // Fallback: show URL so user can copy it
+                JOptionPane.showMessageDialog(this, "Please open this link in your browser:\n" + url,
+                    "Open Link", JOptionPane.INFORMATION_MESSAGE);
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Failed to open link:\n" + ex.getMessage(),
+                "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

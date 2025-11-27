@@ -1,308 +1,314 @@
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.geom.Ellipse2D;
-import java.awt.image.BufferedImage;
-import java.io.File;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.IOException;
-import javax.imageio.ImageIO;
+import java.net.URISyntaxException;
 
 public class AboutUs {
 
+    // --- DESIGN THEME: MIDNIGHT ELEGANCE ---
+    
+    // Deep, rich dark gradient for background
+    private static final Color GRADIENT_START = new Color(20, 30, 48);  // Deep Navy
+    private static final Color GRADIENT_END = new Color(36, 59, 85);    // Slate Blue
+
+    // Dark card with high contrast text
+    private static final Color CARD_COLOR = new Color(30, 35, 45);      // Dark Charcoal
+    private static final Color TITLE_COLOR = new Color(255, 255, 255);  // Pure White
+    private static final Color TEXT_COLOR = new Color(200, 210, 220);   // Soft Light Grey
+    private static final Color ACCENT_COLOR = new Color(255, 193, 7);   // Amber/Gold for contrast
     public static void main(String[] args) {
-        // Ensure the UI is created on the Event Dispatch Thread
         SwingUtilities.invokeLater(() -> {
-            createAndShowGui();
+            try {
+                // Set system look and feel
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException e) {
+            }
+            new AboutUs().createAndShowGUI();
         });
     }
 
-    /**
-     * Creates and returns the AboutUs panel for integration into other components
-     */
+    // New: static factory to create the About Us panel for embedding in Dashboard
     public static JPanel createAboutUsPanel() {
-        // --- Main Container Panel ---
-        // This panel will hold all other components and use a BoxLayout to stack them vertically.
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
-        mainPanel.setBackground(Color.WHITE); // Changed to white background
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(40, 40, 40, 40)); // Add padding
+        // Background Gradient Panel (same look as createAndShowGUI)
+        JPanel mainPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                int w = getWidth(), h = getHeight();
+                GradientPaint gp = new GradientPaint(0, 0, GRADIENT_START, w, h, GRADIENT_END);
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, w, h);
+            }
+        };
+        mainPanel.setLayout(new BorderLayout());
+        mainPanel.setBorder(new EmptyBorder(40, 40, 40, 40));
 
-        // --- Person Data ---
-        String julianDesc = "Julian Agustino (Front-end Developer): Julian focuses on the user-facing side of the project. He designs and develops the user interface (UI) and user experience (UX), ensuring the application is visually appealing and easy to interact with.";
-        String rodmarkDesc = "Rodmark Baustista (Project Manager / Documents): As the Project Manager, Rodmark is responsible for leading the team, coordinating tasks, and ensuring the project stays on schedule. He also oversees or contributes significantly to the preparation and management of all project documentation.";
-        String marlonDesc = "Marlon Lozano (Documents): Marlon is responsible for creating, organizing, and maintaining the project's written materials. This includes reports, technical specifications, user guides, or any other necessary documentation.";
-        String paulDesc = "Paul Pasumala (Back-end Developer): Paul handles the server-side logic and database management. He builds and maintains the core functionality that powers the application, making sure data is processed, stored, and retrieved correctly.";
-        String dayritDesc = "Axzel Dayrit (Design Developer / Printing): Axzel focuses on the visual and creative aspects of the project, likely developing design concepts, layouts, and graphics. He also manages the final production and printing of the physical documents.";
+        // Card panel
+        RoundedPanel cardPanel = new RoundedPanel(30, CARD_COLOR);
+        cardPanel.setLayout(new BoxLayout(cardPanel, BoxLayout.Y_AXIS));
+        cardPanel.setBorder(new EmptyBorder(50, 60, 50, 60));
 
-        // --- Image File Paths for each person ---
-        String julianImagePath = "PERSON/AGUSTINO ENHANCE.png";
-        String rodmarkImagePath = "PERSON/BAUSTITA ENHANCE.png";
-        String marlonImagePath = "PERSON/LOZANO ENHANCE.png";
-        String paulImagePath = "PERSON/PASUMALA ENHANCE.png";
-        String dayritImagePath = "PERSON/DAYRIT ENHANCE.png";
+        JLabel titleLabel = new JLabel("About Us");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 38));
+        titleLabel.setForeground(TITLE_COLOR);
+        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // --- Create and Add Profile Cards ---
-        PersonPanel julianPanel = new PersonPanel("JULIAN AGUSTINO", julianDesc, julianImagePath, false);
-        PersonPanel rodmarkPanel = new PersonPanel("RODMARK BAUTISTA", rodmarkDesc, rodmarkImagePath, false);
-        PersonPanel marlonPanel = new PersonPanel("MARLON LOZANO", marlonDesc, marlonImagePath, false);
-        PersonPanel paulPanel = new PersonPanel("PAUL PASUMALA", paulDesc, paulImagePath, false);
-        PersonPanel dayritPanel = new PersonPanel("AXZEL DAYRIT", dayritDesc, dayritImagePath, false);
+        JPanel accentLine = new JPanel();
+        accentLine.setBackground(ACCENT_COLOR);
+        accentLine.setMaximumSize(new Dimension(100, 5));
+        accentLine.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        mainPanel.add(julianPanel);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 40)));
-        mainPanel.add(rodmarkPanel);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 40)));
-        mainPanel.add(marlonPanel);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 40)));
-        mainPanel.add(paulPanel);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 40)));
-        mainPanel.add(dayritPanel);
+        JPanel contentSplitPanel = new JPanel();
+        contentSplitPanel.setLayout(new BoxLayout(contentSplitPanel, BoxLayout.X_AXIS));
+        contentSplitPanel.setOpaque(false);
+        contentSplitPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JScrollPane scrollPane = new JScrollPane(mainPanel);
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        scrollPane.setBorder(null);
+        JTextPane textPane = new JTextPane();
+        textPane.setContentType("text/html");
+        textPane.setEditable(false);
+        textPane.setFocusable(false);
+        textPane.setOpaque(false);
+        textPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
 
+        String content = "Imagine a world where finding your new best friend is as joyful as the moment " +
+                "you bring them home. Our comprehensive platform revolutionizes the pet " +
+                "ownership journey, starting with a streamlined approach to pet adopting. We " +
+                "are dedicated to helping users adopt more conveniently, stripping away the " +
+                "paperwork and stress to focus on connection. But our care doesn't stop at the " +
+                "doorstep. We support the entire lifecycle of your companion with specialized " +
+                "tools for owners looking to responsibly breed their pet, alongside an " +
+                "integrated booking system that lets you schedule a vet appointment in just a " +
+                "few clicks. It's not just an app; it's a lifetime partner for your pet's health and " +
+                "happiness. Our system focus on helping pets also make the system user-friendly.";
+
+        // HTML styling optimized for Dark Mode
+        String htmlBody = String.format(
+            "<html><body style='font-family: \"Segoe UI\", Helvetica, sans-serif; font-size: 18px; color: %s; text-align: justify; line-height: 1.8; font-weight: 400;'>%s</body></html>", 
+            toHexString(TEXT_COLOR), content
+        );
+
+        textPane.setText(htmlBody);
+        // Ensure text pane doesn't shrink to zero
+        textPane.setMinimumSize(new Dimension(300, 200));
+
+        // 2. IMAGE CONTAINER
+        // Removed image container as per update
+
+        // Add components to split panel
+        contentSplitPanel.add(textPane);
+        // Image container removed — keep flexible spacing so text breathes on wide layouts
+        contentSplitPanel.add(Box.createHorizontalGlue());
+
+
+        // --- ASSEMBLY ---
+        cardPanel.add(titleLabel);
+        cardPanel.add(Box.createVerticalStrut(15));
+        cardPanel.add(accentLine);
+        cardPanel.add(Box.createVerticalStrut(35));
+        cardPanel.add(contentSplitPanel); // Add the split panel instead of just textPane
         
-        JPanel wrapperPanel = new JPanel(new BorderLayout());
-        wrapperPanel.setBackground(Color.WHITE); // Changed to white background
-        wrapperPanel.add(scrollPane, BorderLayout.CENTER);
+        // Push content up slightly so footer sits at bottom properly
+        cardPanel.add(Box.createVerticalGlue());
 
-        return wrapperPanel;
+        // --- FOOTER SECTION ---
+        JPanel footerPanel = new JPanel();
+        footerPanel.setOpaque(false);
+        // Increased gap to 40 to account for wider text elements
+        footerPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 40, 10)); 
+        
+        // Add Social Media Links with Text
+        footerPanel.add(createSocialLink("facebook", "Julian S. Agustino ", "https://www.facebook.com/Julian.Agustino.9206"));
+        footerPanel.add(createSocialLink("instagram", "Julian Agustino ", "https://www.instagram.com/masterzhiju/"));
+        footerPanel.add(createSocialLink("linkedin", "Julian S Agustino ", "https://www.linkedin.com/in/julian-agustino-a87846366/"));
+
+        mainPanel.add(cardPanel, BorderLayout.CENTER);
+        mainPanel.add(footerPanel, BorderLayout.SOUTH);
+
+        return mainPanel;
     }
 
-    private static void createAndShowGui() {
-        JFrame frame = new JFrame("About Us");
+    private void createAndShowGUI() {
+        JFrame frame = new JFrame("About Us - Midnight Edition");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.getContentPane().setBackground(Color.WHITE); // Changed to white background
-        frame.setSize(1000, 600);
 
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
-        mainPanel.setBackground(frame.getContentPane().getBackground());
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(40, 40, 40, 40));
-
-        String julianDesc = "Julian Agustino (Front-end Developer): Julian focuses on the user-facing side of the project. He designs and develops the user interface (UI) and user experience (UX), ensuring the application is visually appealing and easy to interact with.";
-        String rodmarkDesc = "Rodmark Baustista (Project Manager / Documents): As the Project Manager, Rodmark is responsible for leading the team, coordinating tasks, and ensuring the project stays on schedule. He also oversees or contributes significantly to the preparation and management of all project documentation.";
-        String marlonDesc = "Marlon Lozano (Documents): Marlon is responsible for creating, organizing, and maintaining the project's written materials. This includes reports, technical specifications, user guides, or any other necessary documentation.";
-        String paulDesc = "Paul Pasumala (Back-end Developer): Paul handles the server-side logic and database management. He builds and maintains the core functionality that powers the application, making sure data is processed, stored, and retrieved correctly.";
-        String axzelDesc = "Axzel is a qualAxzel Dayrit (Design Developer / Printing): Axzel focuses on the visual and creative aspects of the project, likely developing design concepts, layouts, and graphics. He also manages the final production and printing of the physical documents.";
-
-        String julianImagePath = "PERSON/AGUSTINO ENHANCE.png";
-        String rodmarkImagePath = "PERSON/BAUSTITA ENHANCE.png";
-        String marlonImagePath = "PERSON/LOZANO ENHANCE.png";
-        String paulImagePath = "PERSON/PASUMALA ENHANCE.png";
-        String axzelImagePath = "PERSON/DAYRIT ENHANCE.png";
-        
-        PersonPanel julianPanel = new PersonPanel("JULIAN AGUSTINO", julianDesc, julianImagePath, false);
-        PersonPanel rodmarkPanel = new PersonPanel("RODMARK BAUTISTA", rodmarkDesc, rodmarkImagePath, true);
-        PersonPanel marlonPanel = new PersonPanel("MARLON LOZANO", marlonDesc, marlonImagePath, false);
-        PersonPanel paulPanel = new PersonPanel("PAUL PASUMALA", paulDesc, paulImagePath, true);
-        PersonPanel axzelPanel = new PersonPanel("AXZEL DAYRIT", axzelDesc, axzelImagePath, false);
-
-        mainPanel.add(julianPanel);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 40)));
-        mainPanel.add(rodmarkPanel);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 40)));
-        mainPanel.add(marlonPanel);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 40)));
-        mainPanel.add(paulPanel);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 40)));
-        mainPanel.add(axzelPanel);
-
-        JScrollPane scrollPane = new JScrollPane(mainPanel);
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        scrollPane.setBorder(null);
-
-        frame.getContentPane().add(scrollPane);
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        frame.setSize(screenSize.width, screenSize.height - 40);
         frame.setLocationRelativeTo(null);
+
+        // reuse the static factory to avoid duplicating construction
+        JPanel mainPanel = createAboutUsPanel();
+
+        frame.add(mainPanel);
         frame.setVisible(true);
     }
-}
+    
+    // make helper static so static factory can call it
+    private static String toHexString(Color color) {
+		return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
+	}
 
-class PersonPanel extends JPanel {
+	// make createSocialLink static for use from the static factory
+	private static JPanel createSocialLink(String iconText, String handle, String url) {
+		JPanel panel = new JPanel();
+		panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
+		panel.setOpaque(false);
 
-    private static final int IMAGE_SIZE = 180;
-    private static final Font NAME_FONT = new Font("Arial", Font.BOLD, 22);
-    private static final Font DESC_FONT = new Font("Arial", Font.PLAIN, 20);
-    private static final Color TEXT_COLOR = Color.BLACK; // Changed to black for visibility on white
-    private static final Color BACKGROUND_COLOR = Color.WHITE; // Changed to white background
-    private static final Color GLOW_COLOR = new Color(0, 255, 200); // Blue-green color
+		SocialIcon icon = new SocialIcon(iconText, url);
 
-    @SuppressWarnings("CallToPrintStackTrace")
-    public PersonPanel(String name, String description, String imagePath, boolean reverse) {
-        setLayout(new GridBagLayout());
-        setBackground(BACKGROUND_COLOR);
-        
-        // Create glowing blue-green border effect
-        setBorder(BorderFactory.createCompoundBorder(
-            new GlowBorder(GLOW_COLOR, 3, 8),
-            BorderFactory.createEmptyBorder(20, 20, 20, 20)
-        ));
-        
-        GridBagConstraints gbc = new GridBagConstraints();
+		JLabel handleLabel = new JLabel(handle);
+		handleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+		handleLabel.setForeground(new Color(220, 220, 220)); // Light grey text
 
-        JLabel imageLabel = new JLabel();
-        imageLabel.setPreferredSize(new Dimension(IMAGE_SIZE, IMAGE_SIZE));
-        imageLabel.setMinimumSize(new Dimension(IMAGE_SIZE, IMAGE_SIZE));
-        
-        try {
-            File imageFile = new File(imagePath);
-            Image image = ImageIO.read(imageFile);
-            if (image != null) {
-                // Create circular image with white background
-                BufferedImage circularImage = createCircularImage(image, IMAGE_SIZE);
-                imageLabel.setIcon(new ImageIcon(circularImage));
-            } else {
-                imageLabel.setText("Image not found at path");
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            imageLabel.setText("Error loading image");
-            imageLabel.setForeground(Color.RED);
+		panel.add(icon);
+		panel.add(Box.createHorizontalStrut(12)); // Gap between icon and text
+		panel.add(handleLabel);
+
+		return panel;
+	}
+
+    // --- CUSTOM COMPONENT: ROUNDED PANEL ---
+    static class RoundedPanel extends JPanel {
+        private int cornerRadius = 15;
+        private final Color backgroundColor;
+
+        public RoundedPanel(int radius, Color bgColor) {
+            super();
+            this.cornerRadius = radius;
+            this.backgroundColor = bgColor;
+            setOpaque(false); 
         }
 
-        JPanel textPanel = new JPanel();
-        textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
-        textPanel.setBackground(BACKGROUND_COLOR);
-        
-        JLabel nameLabel = new JLabel(name);
-        nameLabel.setFont(NAME_FONT);
-        nameLabel.setForeground(TEXT_COLOR);
-        nameLabel.setHorizontalAlignment(SwingConstants.LEFT);
-        nameLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        JTextArea descriptionArea = new JTextArea(description);
-        descriptionArea.setFont(DESC_FONT);
-        descriptionArea.setForeground(TEXT_COLOR);
-        descriptionArea.setBackground(BACKGROUND_COLOR);
-        descriptionArea.setOpaque(false);
-        descriptionArea.setEditable(false);
-        descriptionArea.setWrapStyleWord(true);
-        descriptionArea.setLineWrap(true);
-        descriptionArea.setColumns(30);
-        descriptionArea.setAlignmentX(Component.LEFT_ALIGNMENT);
-        textPanel.add(nameLabel);
-        textPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        textPanel.add(descriptionArea);
-        
-        if (reverse) {
-            nameLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-            nameLabel.setAlignmentX(Component.RIGHT_ALIGNMENT);
-            descriptionArea.setAlignmentX(Component.RIGHT_ALIGNMENT);
-            textPanel.setAlignmentX(Component.RIGHT_ALIGNMENT);
-
-            gbc.gridx = 0;
-            gbc.weightx = 1.0;
-            gbc.weighty = 1.0;
-            gbc.fill = GridBagConstraints.BOTH;
-            gbc.insets = new Insets(0, 0, 0, 40);
-            gbc.anchor = GridBagConstraints.NORTHEAST;
-            add(textPanel, gbc);
-
-            gbc.gridx = 1;
-            gbc.weightx = 0;
-            gbc.weighty = 0;
-            gbc.fill = GridBagConstraints.NONE;
-            gbc.insets = new Insets(0, 0, 0, 0);
-            gbc.anchor = GridBagConstraints.NORTH;
-            add(imageLabel, gbc);
-        } else {
-
-            nameLabel.setHorizontalAlignment(SwingConstants.LEFT);
-            nameLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-            descriptionArea.setAlignmentX(Component.LEFT_ALIGNMENT);
-            textPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             
-            gbc.gridx = 0;
-            gbc.weightx = 0;
-            gbc.weighty = 0;
-            gbc.fill = GridBagConstraints.NONE;
-            gbc.insets = new Insets(0, 0, 0, 40);
-            gbc.anchor = GridBagConstraints.NORTH;
-            add(imageLabel, gbc);
-
-            gbc.gridx = 1;
-            gbc.weightx = 1.0;
-            gbc.weighty = 1.0;
-            gbc.fill = GridBagConstraints.BOTH;
-            gbc.anchor = GridBagConstraints.NORTHWEST;
-            gbc.insets = new Insets(0, 0, 0, 0);
-            add(textPanel, gbc);
+            g2.setColor(backgroundColor);
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), cornerRadius, cornerRadius);
         }
     }
-    
-    /**
-     * Creates a circular image with white background
-     */
-    private BufferedImage createCircularImage(Image sourceImage, int size) {
-        BufferedImage output = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = output.createGraphics();
-        
-        // Enable anti-aliasing for smooth edges
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        
-        // Fill with white background
-        g2.setColor(Color.WHITE);
-        g2.fillOval(0, 0, size, size);
-        
-        // Create circular clip
-        g2.setClip(new Ellipse2D.Float(0, 0, size, size));
-        
-        // Draw the scaled image
-        Image scaledImage = sourceImage.getScaledInstance(size, size, Image.SCALE_SMOOTH);
-        g2.drawImage(scaledImage, 0, 0, null);
-        
-        g2.dispose();
-        return output;
-    }
-}
 
-/**
- * Custom border class to create a glowing effect
- */
-class GlowBorder implements javax.swing.border.Border {
-    private Color glowColor;
-    private int thickness;
-    private int glowSize;
-    
-    public GlowBorder(Color glowColor, int thickness, int glowSize) {
-        this.glowColor = glowColor;
-        this.thickness = thickness;
-        this.glowSize = glowSize;
-    }
-    
-    @Override
-    public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
-        Graphics2D g2 = (Graphics2D) g.create();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        
-        // Draw multiple layers for glow effect
-        for (int i = glowSize; i >= 0; i--) {
-            float alpha = (float) (1.0 - (i / (float) glowSize)) * 0.3f;
-            g2.setColor(new Color(glowColor.getRed(), glowColor.getGreen(), glowColor.getBlue(), (int) (alpha * 255)));
-            g2.setStroke(new BasicStroke(thickness + i));
-            g2.drawRoundRect(x + i/2, y + i/2, width - i - 1, height - i - 1, 15, 15);
-        }
-        
-        // Draw main border
-        g2.setColor(glowColor);
-        g2.setStroke(new BasicStroke(thickness));
-        g2.drawRoundRect(x + glowSize/2, y + glowSize/2, width - glowSize - 1, height - glowSize - 1, 15, 15);
-        
-        g2.dispose();
-    }
-    
-    @Override
-    public Insets getBorderInsets(Component c) {
-        return new Insets(glowSize + thickness, glowSize + thickness, glowSize + thickness, glowSize + thickness);
-    }
-    
-    @Override
-    public boolean isBorderOpaque() {
-        return false;
-    }
-}
+    // --- CUSTOM COMPONENT: SOCIAL ICON ---
+    static class SocialIcon extends JLabel {
+        private boolean isHovered = false;
+        private final String iconType; // "facebook" | "instagram" | "linkedin"
+ 
+        public SocialIcon(String iconType, String url) {
+            super("", SwingConstants.CENTER);
+            this.iconType = iconType == null ? "" : iconType.toLowerCase();
+            setFont(new Font("Segoe UI", Font.BOLD, 20));
+            setForeground(Color.WHITE);
+            setPreferredSize(new Dimension(45, 45)); // Slightly smaller to balance with text
+            setMaximumSize(new Dimension(45, 45));
+            setMinimumSize(new Dimension(45, 45));
+            
+            // Add hover effect
+            addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    isHovered = true;
+                    setCursor(new Cursor(Cursor.HAND_CURSOR));
+                    repaint();
+                }
+ 
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    isHovered = false;
+                    setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+                    repaint();
+                }
+ 
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    if (url == null || url.isEmpty()) return;
+                    try {
+                        if (java.awt.Desktop.isDesktopSupported()) {
+                            java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
+                        }
+                    } catch (IOException | URISyntaxException ex) {
+                        // Fail quietly; developer may log if desired
 
+                    }
+                }
+            });
+         }
+ 
+         @Override
+         protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+          // choose brand/background color
+            Color bg;
+            bg = switch (iconType) {
+                case "facebook" -> new Color(59, 89, 152);
+                case "instagram" -> new Color(225, 48, 108);
+                case "linkedin" -> new Color(10, 102, 194);
+                default -> new Color(255,255,255,30);
+            }; // Facebook blue
+            // base magenta-ish, we'll mix later
+            // LinkedIn blue
+            // lighten on hover a bit
+            if (isHovered) bg = bg.brighter();
+
+            // draw circular background
+            if (!"instagram".equals(iconType)) {
+                g2.setColor(bg);
+                g2.fillOval(0, 0, getWidth(), getHeight());
+                
+                // draw simple letter marks for facebook/linkedin
+                g2.setColor(Color.WHITE);
+                Font iconFont = getFont().deriveFont(Font.BOLD, 18f);
+                g2.setFont(iconFont);
+                FontMetrics fm = g2.getFontMetrics();
+                String mark = " ";
+                if ("facebook".equals(iconType)) mark = "f";
+                else if ("linkedin".equals(iconType)) mark = "in";
+                int strW = fm.stringWidth(mark);
+                int strH = fm.getAscent();
+                g2.drawString(mark, (getWidth() - strW)/2, (getHeight() + strH)/2 - 2);
+                super.paintComponent(g);
+                return;
+            }
+
+            // Instagram: gradient circular background + white camera glyph
+            GradientPaint gp = new GradientPaint(0, 0, new Color(255, 140, 0), getWidth(), getHeight(), new Color(193, 53, 132));
+            g2.setPaint(gp);
+            g2.fillOval(0, 0, getWidth(), getHeight());
+
+            int w = getWidth(), h = getHeight();
+            int pad = Math.max(8, Math.min(w, h) / 8);
+            int size = Math.min(w, h) - pad * 2;
+            int x = (w - size) / 2;
+            int y = (h - size) / 2;
+
+            // draw white rounded-square camera outline
+            Stroke oldStroke = g2.getStroke();
+            g2.setStroke(new BasicStroke(Math.max(2f, size / 18f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g2.setColor(Color.WHITE);
+            int arc = Math.max(6, size / 6);
+            g2.drawRoundRect(x, y, size, size, arc, arc);
+
+            // draw lens (filled white circle)
+            int cx = x + size/2;
+            int cy = y + size/2;
+            int lensR = Math.max(6, size / 6);
+            g2.fillOval(cx - lensR/2, cy - lensR/2, lensR, lensR);
+
+            // draw small flash square at top-right inside the rounded square
+            int flash = Math.max(5, size / 8);
+            int fx = x + size - flash - Math.max(4, size/20);
+            int fy = y + Math.max(6, size/12);
+            g2.fillRoundRect(fx, fy, flash, flash, flash/3, flash/3);
+
+            g2.setStroke(oldStroke);
+            super.paintComponent(g);
+         }
+     }
+ }

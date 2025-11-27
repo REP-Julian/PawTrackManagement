@@ -9,12 +9,6 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.RoundRectangle2D;
 import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import javax.imageio.ImageIO;
 import javax.swing.Timer;
 
 public class Dashboard extends JFrame {
@@ -105,8 +99,6 @@ public class Dashboard extends JFrame {
         sidebar.add(createModernSidebarButton("🎯", "Trivia", "TRIVIA_PANEL", false));
         sidebar.add(Box.createRigidArea(new Dimension(0, 8)));
         sidebar.add(createModernSidebarButton("💰", "Shop", "SHOP_PANEL", false));
-        sidebar.add(Box.createRigidArea(new Dimension(0, 8)));
-        sidebar.add(createModernSidebarButton("💳", "Transactions", "TRANSACTIONS_PANEL", false));
         sidebar.add(Box.createRigidArea(new Dimension(0, 8)));
         sidebar.add(createModernSidebarButton("ℹ️", "About Us", "ABOUT_PANEL", false));
         
@@ -736,6 +728,7 @@ public class Dashboard extends JFrame {
             }
         };
 
+        // Use BorderLayout and allow multi-line wrapped label so long texts don't get truncated.
         button.setLayout(new BorderLayout(10, 0));
         button.setOpaque(false);
 
@@ -782,8 +775,10 @@ public class Dashboard extends JFrame {
         };
         iconLabel.setFont(new Font("SansSerif", Font.PLAIN, 20));
         iconLabel.setBorder(new EmptyBorder(0, 15, 0, 0));
+        iconLabel.setVerticalAlignment(SwingConstants.CENTER);
 
-        JLabel textLabel = new JLabel(text) {
+        // Use HTML to allow wrapping. Keep styling minimal so look stays consistent.
+        JLabel textLabel = new JLabel("<html><div style='white-space:normal;'>" + text + "</div></html>") {
             private Timer colorTimer;
             private float colorProgress = 0f;
 
@@ -851,15 +846,17 @@ public class Dashboard extends JFrame {
         };
         textLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
         textLabel.setForeground(isFirst ? Color.WHITE : TEXT_COLOR);
+        textLabel.setVerticalAlignment(SwingConstants.CENTER);
 
         button.add(iconLabel, BorderLayout.WEST);
         button.add(textLabel, BorderLayout.CENTER);
 
+        // Increase preferred height so wrapped text won't be cut; allow width to expand.
         button.setContentAreaFilled(false);
         button.setBorderPainted(false);
         button.setFocusPainted(false);
-        button.setPreferredSize(new Dimension(210, 45));
-        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
+        button.setPreferredSize(new Dimension(230, 60));
+        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
         button.setAlignmentX(Component.CENTER_ALIGNMENT);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
@@ -868,51 +865,38 @@ public class Dashboard extends JFrame {
         }
 
         button.addActionListener((ActionEvent e) -> {
-            // For Shop, use the dashboard's SHOP_PANEL card instead of opening a separate window.
-            // (No special-case window opening — let the normal panel-switching below run.)
-            
-            // Special handling for Profile button to show integrated UserProfile
-            if (panelName.equals("PROFILE_PANEL")) {
-                // Update active button state
-                if (activeButton != null && activeButton instanceof JButton) {
-                    try {
-                        activeButton.getClass().getMethod("setActive", boolean.class).invoke(activeButton, false);
-                    } catch (Exception ex) {
-                        // Ignore
-                    }
-                }
-                
-                try {
-                    button.getClass().getMethod("setActive", boolean.class).invoke(button, true);
-                } catch (Exception ex) {
-                    // Ignore
-                }
-                
-                activeButton = button;
-                cardLayout.show(mainContent, panelName);
-                return;
-            }
-            
-            // Regular panel switching for other buttons
-            if (activeButton != null && activeButton instanceof JButton) {
-                try {
-                    activeButton.getClass().getMethod("setActive", boolean.class).invoke(activeButton, false);
-                } catch (Exception ex) {
-                    // Ignore
-                }
-            }
-            
-            try {
-                button.getClass().getMethod("setActive", boolean.class).invoke(button, true);
-            } catch (Exception ex) {
-                // Ignore
-            }
-            
-            activeButton = button;
-            cardLayout.show(mainContent, panelName);
+            // Use unified helper to switch panels so Profile and other buttons behave the same.
+            showPanel(button, panelName);
         });
 
         return button;
+    }
+
+    // Add a small helper to centralize panel switching and active-button visuals
+    private void showPanel(JButton button, String panelName) {
+        // Deactivate previous active button visually
+        if (activeButton != null && activeButton instanceof JButton) {
+            try {
+                activeButton.getClass().getMethod("setActive", boolean.class).invoke(activeButton, false);
+            } catch (Exception ex) {
+                // ignore visual failure
+            }
+        }
+
+        // Activate this button visually
+        if (button != null) {
+            try {
+                button.getClass().getMethod("setActive", boolean.class).invoke(button, true);
+            } catch (Exception ex) {
+                // ignore visual failure
+            }
+        }
+
+        // Remember active button and show the requested card
+        activeButton = button;
+        if (cardLayout != null && mainContent != null && panelName != null) {
+            cardLayout.show(mainContent, panelName);
+        }
     }
 
     private void createMainContentPanel() {
@@ -977,7 +961,7 @@ public class Dashboard extends JFrame {
         }
         
         // Transactions panel
-        mainContent.add(createTransactionsPanel(), "TRANSACTIONS_PANEL");
+        // mainContent.add(createTransactionsPanel(), "TRANSACTIONS_PANEL");
         
         // About Us panel with error handling
         try {
@@ -1011,6 +995,28 @@ public class Dashboard extends JFrame {
         } catch (Exception e) {
             System.err.println("Error creating user profile panel: " + e.getMessage());
             mainContent.add(createProfilePanel(), "PROFILE_PANEL");
+        }
+
+        // Ensure the Profile view is shown and the sidebar reflects it
+        // (Do this after all panels have been added)
+        try {
+            cardLayout.show(mainContent, "PROFILE_PANEL");
+
+            // Find the Profile button in the sidebar and update active visuals
+            JButton profileBtn = findButtonInSidebar(sidebar, "Profile");
+            if (profileBtn != null) {
+                if (activeButton != null) {
+                    try {
+                        activeButton.getClass().getMethod("setActive", boolean.class).invoke(activeButton, false);
+                    } catch (Exception ex) { /* ignore */ }
+                }
+                try {
+                    profileBtn.getClass().getMethod("setActive", boolean.class).invoke(profileBtn, true);
+                } catch (Exception ex) { /* ignore */ }
+                activeButton = profileBtn;
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to default-show PROFILE_PANEL: " + e.getMessage());
         }
     }
     
@@ -1306,12 +1312,13 @@ public class Dashboard extends JFrame {
         for (Component comp : container.getComponents()) {
             if (comp instanceof JButton) {
                 JButton button = (JButton) comp;
-                // Check if this button contains the shop text
+                // Check inner components (labels) for text containing the buttonText (handles HTML-wrapped labels)
                 Container buttonContainer = (Container) button;
                 for (Component innerComp : buttonContainer.getComponents()) {
                     if (innerComp instanceof JLabel) {
                         JLabel label = (JLabel) innerComp;
-                        if (label.getText().equals(buttonText)) {
+                        String lblText = label.getText();
+                        if (lblText != null && lblText.contains(buttonText)) {
                             return button;
                         }
                     }
@@ -1335,32 +1342,6 @@ public class Dashboard extends JFrame {
             this.toFront();
             this.requestFocus();
         });
-    }
-
-    private JPanel createTransactionsPanel() {
-        try {
-            // Get the reusable transaction panel from TransactionHistory
-            JPanel txPanel = TransactionHistory.createTransactionPanel();
-
-            // Wrap it to match dashboard gradient background and padding
-            JPanel wrapper = new JPanel(new BorderLayout()) {
-                @Override
-                protected void paintComponent(Graphics g) {
-                    super.paintComponent(g);
-                    Graphics2D g2d = (Graphics2D) g;
-                    g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-                    GradientPaint gp = new GradientPaint(0, 0, new Color(243, 244, 246), 0, getHeight(), new Color(229, 231, 235));
-                    g2d.setPaint(gp);
-                    g2d.fillRect(0, 0, getWidth(), getHeight());
-                }
-            };
-            wrapper.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
-            wrapper.add(txPanel, BorderLayout.CENTER);
-            return wrapper;
-        } catch (Exception e) {
-            System.err.println("Error embedding TransactionHistory: " + e.getMessage());
-            return createContentPanel("Transaction History");
-        }
     }
 
     public static void main(String[] args) {

@@ -68,30 +68,12 @@ public class CreateAccount extends JFrame {
         private final int radius;
         private final Color startColor;
         private final Color endColor;
-        private boolean isHighlighted = false;
-        private static final Color HIGHLIGHT_COLOR = new Color(64, 224, 208, 80); // Turquoise/blue-green
 
         public RoundedPanel(int radius, Color startColor, Color endColor) {
             this.radius = radius;
             this.startColor = startColor;
             this.endColor = endColor;
             setOpaque(false);
-            
-            addMouseListener(new MouseAdapter() {
-                @Override
-                public void mousePressed(MouseEvent e) {
-                    isHighlighted = true;
-                    repaint();
-                    
-                    // Remove highlight after 200ms
-                    Timer timer = new Timer(200, evt -> {
-                        isHighlighted = false;
-                        repaint();
-                    });
-                    timer.setRepeats(false);
-                    timer.start();
-                }
-            });
         }
 
         @Override
@@ -102,12 +84,6 @@ public class CreateAccount extends JFrame {
             GradientPaint gradient = new GradientPaint(0, 0, startColor, 0, getHeight(), endColor);
             g2.setPaint(gradient);
             g2.fillRoundRect(0, 0, getWidth(), getHeight(), radius, radius);
-            
-            // Highlight overlay when clicked
-            if (isHighlighted) {
-                g2.setColor(HIGHLIGHT_COLOR);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), radius, radius);
-            }
             
             g2.dispose();
         }
@@ -630,8 +606,8 @@ public class CreateAccount extends JFrame {
         int buttonSpacing = Math.max(15, screenSize.width / 100);
         btnGbc.insets = new Insets(buttonSpacing, buttonSpacing, buttonSpacing, buttonSpacing);
         
-        backButton = new ModernButton("← BACK", COLOR_BUTTON_RED, COLOR_BUTTON_RED_HOVER);
-        submitButton = new ModernButton("SUBMIT →", COLOR_BUTTON_GREEN, COLOR_BUTTON_GREEN_HOVER);
+        backButton = new ModernButton(" BACK", COLOR_BUTTON_RED, COLOR_BUTTON_RED_HOVER);
+        submitButton = new ModernButton("SUBMIT ", COLOR_BUTTON_GREEN, COLOR_BUTTON_GREEN_HOVER);
         
         // Scale button fonts
         Font buttonFont = new Font("Segoe UI", Font.BOLD, Math.max(12, baseFontSize));
@@ -715,18 +691,6 @@ public class CreateAccount extends JFrame {
                     "Database Error", JOptionPane.ERROR_MESSAGE);
         }
     }
-    private void styleOptionPane() {
-        UIManager.put("Panel.background", COLOR_PANEL_BG_START);
-        UIManager.put("OptionPane.background", COLOR_PANEL_BG_START);
-        UIManager.put("OptionPane.messageForeground", COLOR_TEXT_LIGHT);
-        UIManager.put("Label.foreground", COLOR_TEXT_LIGHT);
-        UIManager.put("Button.background", new Color(255, 255, 255));  // White button
-        UIManager.put("Button.foreground", new Color(0, 0, 0));        // Black text on button
-        UIManager.put("Button.select", new Color(240, 240, 240));      // Light gray on select
-        UIManager.put("Button.focus", new Color(200, 200, 200));       // Gray focus
-        UIManager.put("Button.border", BorderFactory.createLineBorder(new Color(200, 200, 200), 1));
-    }
-
     /**
      * Creates a JLabel with an image scaled to fit the specified dimensions.
      * Falls back to text if image cannot be loaded.

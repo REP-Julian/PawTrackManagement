@@ -12,6 +12,17 @@ public class AdoptionForm extends JFrame {
     private int PREVIEW_WIDTH = 500;
     private int PREVIEW_HEIGHT = 400;
 
+    // New: references to form fields for validation
+    private JTextField nameField;
+    private JTextField genderField;
+    private JTextField ageField;
+    private JTextField breedField;
+    private JTextField healthField;
+    private JTextField contactField;
+    private JTextField traitsField;
+    private JTextArea reasonTextArea;
+    private File selectedImageFile; // set when image chosen
+
     // Fonts
     private Font FONT_TITLE;
     private Font FONT_LABEL;
@@ -79,6 +90,27 @@ public class AdoptionForm extends JFrame {
         mainCard.add(createPhotoPanel());
 
         contentPane.add(mainCard, new GridBagConstraints());
+    }
+
+    private void handleBackButton() {
+        int option = JOptionPane.showConfirmDialog(this,
+            "Are you sure you want to go back?\nAny unsaved changes will be lost.",
+            "Confirm Back",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE);
+
+        if (option == JOptionPane.YES_OPTION) {
+            // If there is an existing Dashboard instance, bring it back to front.
+            for (Frame f : Frame.getFrames()) {
+                if (f instanceof Dashboard) {
+                    f.setVisible(true);
+                    f.toFront();
+                    f.requestFocus();
+                }
+            }
+            // Close this form (Dashboard listeners attached when opening this form will also run).
+            this.dispose();
+        }
     }
 
     // Gradient Panel Class
@@ -165,7 +197,9 @@ public class AdoptionForm extends JFrame {
         gbc.gridx = 0; gbc.gridy = row++; gbc.gridwidth = 2; gbc.weightx = 1.0; gbc.weighty = 0;
         formGrid.add(createLabel("Name of Pet"), gbc);
         gbc.gridy = row++;
-        formGrid.add(createTextField(), gbc);
+        // use stored field
+        nameField = createTextField();
+        formGrid.add(nameField, gbc);
 
         // Gender & Age
         gbc.gridy = row++; gbc.gridwidth = 1; gbc.weightx = 0.5;
@@ -174,15 +208,18 @@ public class AdoptionForm extends JFrame {
         formGrid.add(createLabel("Age"), gbc);
 
         gbc.gridy = row++; gbc.gridx = 0;
-        formGrid.add(createTextField(), gbc);
+        genderField = createTextField();
+        formGrid.add(genderField, gbc);
         gbc.gridx = 1;
-        formGrid.add(createTextField(), gbc);
+        ageField = createTextField();
+        formGrid.add(ageField, gbc);
 
         // Breed
         gbc.gridy = row++; gbc.gridx = 0; gbc.gridwidth = 2; gbc.weightx = 1.0;
         formGrid.add(createLabel("Breed"), gbc);
         gbc.gridy = row++;
-        formGrid.add(createTextField(), gbc);
+        breedField = createTextField();
+        formGrid.add(breedField, gbc);
 
         // Health Status & Contact
         gbc.gridy = row++; gbc.gridwidth = 1; gbc.weightx = 0.5;
@@ -191,15 +228,18 @@ public class AdoptionForm extends JFrame {
         formGrid.add(createLabel("Contact Number"), gbc);
 
         gbc.gridy = row++; gbc.gridx = 0;
-        formGrid.add(createTextField(), gbc);
+        healthField = createTextField();
+        formGrid.add(healthField, gbc);
         gbc.gridx = 1;
-        formGrid.add(createTextField(), gbc);
+        contactField = createTextField();
+        formGrid.add(contactField, gbc);
 
         // Personal Traits
         gbc.gridy = row++; gbc.gridx = 0; gbc.gridwidth = 2; gbc.weightx = 1.0;
         formGrid.add(createLabel("Personal Traits"), gbc);
         gbc.gridy = row++;
-        formGrid.add(createTextField(), gbc);
+        traitsField = createTextField();
+        formGrid.add(traitsField, gbc);
 
         // Reason for Adoption
         gbc.gridy = row++; gbc.weighty = 0;
@@ -208,8 +248,8 @@ public class AdoptionForm extends JFrame {
         gbc.weighty = 1.0; 
         gbc.fill = GridBagConstraints.BOTH;
         gbc.ipady = 0; // Remove extra padding
-        JScrollPane reasonArea = createTextArea();
-        formGrid.add(reasonArea, gbc);
+        JScrollPane reasonAreaScroll = createTextArea(); // sets reasonTextArea internally
+        formGrid.add(reasonAreaScroll, gbc);
 
         formPanel.add(formGrid, BorderLayout.CENTER);
         return formPanel;
@@ -256,7 +296,8 @@ public class AdoptionForm extends JFrame {
     }
 
     private JScrollPane createTextArea() {
-        JTextArea area = new JTextArea(4, 20) { // Reduced from 5 rows
+        // store reference to the area for validation
+        reasonTextArea = new JTextArea(4, 20) { // Reduced from 5 rows
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -268,16 +309,16 @@ public class AdoptionForm extends JFrame {
             }
         };
         
-        area.setFont(FONT_FIELD);
-        area.setBackground(new Color(255, 255, 255, 230));
-        area.setForeground(COLOR_TEXT_DARK);
-        area.setCaretColor(COLOR_PRIMARY);
-        area.setLineWrap(true);
-        area.setWrapStyleWord(true);
-        area.setBorder(new EmptyBorder(10, 16, 10, 16)); // Reduced from 12
-        area.setOpaque(false);
+        reasonTextArea.setFont(FONT_FIELD);
+        reasonTextArea.setBackground(new Color(255, 255, 255, 230));
+        reasonTextArea.setForeground(COLOR_TEXT_DARK);
+        reasonTextArea.setCaretColor(COLOR_PRIMARY);
+        reasonTextArea.setLineWrap(true);
+        reasonTextArea.setWrapStyleWord(true);
+        reasonTextArea.setBorder(new EmptyBorder(10, 16, 10, 16)); // Reduced from 12
+        reasonTextArea.setOpaque(false);
 
-        JScrollPane scroll = new JScrollPane(area);
+        JScrollPane scroll = new JScrollPane(reasonTextArea);
         scroll.setBorder(BorderFactory.createEmptyBorder());
         scroll.setOpaque(false);
         scroll.getViewport().setOpaque(false);
@@ -432,6 +473,7 @@ public class AdoptionForm extends JFrame {
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             try {
                 File file = chooser.getSelectedFile();
+                selectedImageFile = file; // store selected file
                 ImageIcon icon = new ImageIcon(file.getAbsolutePath());
                 Image img = icon.getImage().getScaledInstance(
                     PREVIEW_WIDTH - 30, PREVIEW_HEIGHT - 30, Image.SCALE_SMOOTH
@@ -439,6 +481,7 @@ public class AdoptionForm extends JFrame {
                 imagePreviewLabel.setIcon(new ImageIcon(img));
                 imagePreviewLabel.setText(null);
             } catch (Exception ex) {
+                selectedImageFile = null;
                 setPlaceholderText("Error loading image");
                 JOptionPane.showMessageDialog(this, "Error loading image: " + ex.getMessage(), 
                                             "Error", JOptionPane.ERROR_MESSAGE);
@@ -446,20 +489,97 @@ public class AdoptionForm extends JFrame {
         }
     }
 
-    private void handleBackButton() {
-        int option = JOptionPane.showConfirmDialog(this,
-            "Are you sure you want to go back?\nAny unsaved changes will be lost.",
-            "Confirm Back",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.QUESTION_MESSAGE);
-            
-        if (option == JOptionPane.YES_OPTION) {
-            this.dispose();
-        }
+    // New helper to mark invalid fields (uses compound border to keep padding)
+    private void markInvalid(JComponent comp) {
+        comp.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(COLOR_DANGER, 2),
+            new EmptyBorder(8, 12, 8, 12)
+        ));
+    }
+
+    private void resetFieldBorders() {
+        EmptyBorder defaultPadding = new EmptyBorder(10, 16, 10, 16);
+        if (nameField != null) nameField.setBorder(defaultPadding);
+        if (genderField != null) genderField.setBorder(defaultPadding);
+        if (ageField != null) ageField.setBorder(defaultPadding);
+        if (breedField != null) breedField.setBorder(defaultPadding);
+        if (healthField != null) healthField.setBorder(defaultPadding);
+        if (contactField != null) contactField.setBorder(defaultPadding);
+        if (traitsField != null) traitsField.setBorder(defaultPadding);
+        if (reasonTextArea != null) reasonTextArea.setBorder(defaultPadding);
     }
 
     private void handleSubmit() {
-        // TODO: Implement form validation and submission logic
+        // Validation
+        resetFieldBorders();
+        StringBuilder errors = new StringBuilder();
+        java.util.List<JComponent> invalids = new java.util.ArrayList<>();
+
+        if (nameField.getText().trim().isEmpty()) {
+            errors.append("- Name of Pet is required.\n");
+            invalids.add(nameField);
+        }
+        if (genderField.getText().trim().isEmpty()) {
+            errors.append("- Gender is required.\n");
+            invalids.add(genderField);
+        }
+        String ageTxt = ageField.getText().trim();
+        if (ageTxt.isEmpty()) {
+            errors.append("- Age is required.\n");
+            invalids.add(ageField);
+        } else {
+            try {
+                int age = Integer.parseInt(ageTxt);
+                if (age <= 0) {
+                    errors.append("- Age must be a positive number.\n");
+                    invalids.add(ageField);
+                }
+            } catch (NumberFormatException ex) {
+                errors.append("- Age must be numeric.\n");
+                invalids.add(ageField);
+            }
+        }
+        if (breedField.getText().trim().isEmpty()) {
+            errors.append("- Breed is required.\n");
+            invalids.add(breedField);
+        }
+        if (healthField.getText().trim().isEmpty()) {
+            errors.append("- Health Status is required.\n");
+            invalids.add(healthField);
+        }
+        String contactTxt = contactField.getText().trim();
+        if (contactTxt.isEmpty()) {
+            errors.append("- Contact Number is required.\n");
+            invalids.add(contactField);
+        } else if (!contactTxt.matches("\\d{7,15}")) {
+            errors.append("- Contact Number must be digits (7-15 digits).\n");
+            invalids.add(contactField);
+        }
+        if (traitsField.getText().trim().isEmpty()) {
+            errors.append("- Personal Traits is required.\n");
+            invalids.add(traitsField);
+        }
+        if (reasonTextArea.getText().trim().isEmpty()) {
+            errors.append("- Reason for Adoption is required.\n");
+            invalids.add(reasonTextArea);
+        }
+
+        // Optionally require image:
+        // if (selectedImageFile == null) {
+        //     errors.append("- Please upload a pet photo.\n");
+        //     // no component to highlight specifically
+        // }
+
+        if (invalids.size() > 0) {
+            for (JComponent c : invalids) markInvalid(c);
+            // focus first invalid
+            invalids.get(0).requestFocusInWindow();
+            JOptionPane.showMessageDialog(this, "Please fix the following errors:\n\n" + errors.toString(),
+                                          "Validation Error", JOptionPane.WARNING_MESSAGE);
+            return; // prevent submit
+        }
+
+        // If all validations pass, proceed with submission
         JOptionPane.showMessageDialog(this,
             "Form submitted successfully!\n\nThis is where you would save the adoption data.",
             "Success",

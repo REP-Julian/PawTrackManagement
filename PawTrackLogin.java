@@ -185,7 +185,7 @@ public class PawTrackLogin extends JFrame {
         gbc.insets = new Insets(5, 40, 15, 40);
         formPanel.add(linksPanel, gbc);
 
-        JLabel watermarkLabel = new JLabel("© All Right Reserved");
+        JLabel watermarkLabel = new JLabel("© All Right Reserved BAIT1B PawTrack 2025");
         watermarkLabel.setFont(new Font("Inter", Font.PLAIN, 10));
         watermarkLabel.setForeground(COLOR_PLACEHOLDER);
         watermarkLabel.setHorizontalAlignment(SwingConstants.CENTER);
